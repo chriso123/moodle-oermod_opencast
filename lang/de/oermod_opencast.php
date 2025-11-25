@@ -26,27 +26,23 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['addpeoplesetting'] = 'Personen zum OER-Element hinzufügen';
-$string['addpeoplesetting_description'] = 'Fügen Sie die Personen und ihre Rollen automatisch zum OER-Element hinzu, ' .
-        'wenn Sie die Videos aus opencast laden. People will only be added when the element metadata has not been edited ' .
-        'and stored. More people can be added manually and also the automatically added people can be removed.' .
-        'Die folgenden Rollen werden hinzugefügt: Präsentator:in, Beitragende:r, Rechteinhaber:in.';
+$string['addpeoplesetting_description'] = 'Fügen Sie die Personen und ihre Rollen automatisch zum OER-Element hinzu, wenn Sie die Videos aus opencast laden. Die folgenden Rollen werden hinzugefügt: Präsentator:in, Beitragende:r, Rechteinhaber:in.';
+$string['check_released_videos_task'] = 'Task zum Überprüfen von veröffentlichten Videos';
 $string['contributor'] = 'Beitragende:r';
 $string['creator'] = 'Ersteller:in';
 $string['duration'] = 'Dauer';
+$string['message:errors'] = 'Folgende veröffentlichte Opencast Videos haben Fehler:';
+$string['message:missingvideos'] = 'Fehlende, bereits veröffentlichte Opencast Videos';
+$string['message:missingvideos_body'] = 'Folgende Opencast Videos können nicht mehr gefunden werden (Task returniert 404):';
+$string['message:missingvideos_footer'] = 'Diese Videos müssen manuell überprüft werden.';
+$string['message:missingvideos_small'] = 'Opencast Videos fehlen, bitte kontrollieren.';
+$string['messageprovider:missingvideos'] = 'Benachrichtigung wenn Videos auf Opencast fehlen.';
 $string['origin'] = 'Opencast';
 $string['pluginname'] = 'OER Subplugin zum Laden von Opencast Videos';
 $string['presenter'] = 'Präsentator:in';
 $string['privacy:metadata'] = 'Dieses Plugin speichert keine Daten';
-$string['releasedvideo'] = '<p>Dieses Video wurde als <strong>Open Educational Resource (OER)</strong> veröffentlicht.</p>' .
-        '<p>Auf dieser Oberfläche ist es nicht mehr möglich die Metadaten des Videos zu editieren, oder das Video zu löschen.<br>' .
-        'Um das Video zu löschen, wenden Sie sich bitte an den Support.</p>';
+$string['releasedvideo'] = '<p>Dieses Video wurde als <strong>Open Educational Resource (OER)</strong> veröffentlicht.</p><p>Auf dieser Oberfläche ist es nicht mehr möglich die Metadaten des Videos zu editieren, oder das Video zu löschen.<br>Um das Video zu löschen, wenden Sie sich bitte an den Support.</p>';
 $string['rightsholder'] = 'Rechteinhaber:in';
 $string['rolestoremovewrite'] = 'Rollen, von denen Schreibrechte entfernt werden';
-$string['rolestoremovewrite_description'] = 'Opencast-Rollen, bei denen die Schreibrechte ' .
-        'nach Freigabe eines OER-Objekts entfernt werden. Dadurch wird verhindert, ' .
-        'dass das Video in Opencast verändert oder gelöscht wird. Eine Rolle pro Zeile. ' .
-        'Der Platzhalter {{courseid}} kann verwendet werden.' .
-        '<p><strong>Wichtig:</strong>Damit dies funktioniert, müssen Opencast-Workflows auf ' .
-        'Rollen beschränkt werden, und der Opencast-Admin-Benutzer, der in tool_opencast festgelegt ist, ' .
-        'darf keinen Schreibzugriff auf die Standard-Admin-Rolle in Opencast haben (Standardname: ROLE_ADMIN)</p>';
+$string['rolestoremovewrite_description'] = 'Opencast-Rollen, bei denen die Schreibrechte nach Freigabe eines OER-Objekts entfernt werden. Dadurch wird verhindert, dass das Video in Opencast verändert oder gelöscht wird. Eine Rolle pro Zeile. Der Platzhalter {{courseid}} kann verwendet werden.<p><strong>Wichtig:</strong>Damit dies funktioniert, müssen Opencast-Workflows auf Rollen beschränkt werden, und der Opencast-Admin-Benutzer, der in tool_opencast festgelegt ist, darf keinen Schreibzugriff auf die Standard-Admin-Rolle in Opencast haben (Standardname: ROLE_ADMIN)</p>';
 $string['series'] = 'Serie';

@@ -19,20 +19,19 @@
  *
  * @package    oermod_opencast
  * @author     Christian Ortner <christian.ortner@tugraz.at>
- * @copyright  2023 Educational Technologies, Graz, University of Technology
+ * @copyright  2025 Educational Technologies, Graz, University of Technology
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2025112500;
-$plugin->requires = 2024100707;
-$plugin->component = 'oermod_opencast';
-$plugin->release = 'v1.0.3';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->dependencies = [
-        'local_oer' => 2023111701, // Older versions do not have mod subplugin support.
-        'tool_opencast' => 2023112200, // Needed for API access.
-        'block_opencast' => 2023112200, // Needed for series id.
+$messageproviders = [
+    // Notify privileged users that released videos are not available on opencast anymore.
+    'missingvideos' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+        'capability' => 'oermod/opencast:missingvideos',
+    ],
 ];
-$plugin->supported = [405, 405];

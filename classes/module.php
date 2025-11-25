@@ -26,11 +26,9 @@
 namespace oermod_opencast;
 
 use local_oer\identifier;
-use local_oer\logger;
 use local_oer\modules\elements;
 use local_oer\modules\element;
 use local_oer\modules\person;
-use tool_opencast\local\api;
 use tool_opencast\local\settings_api;
 
 /**
@@ -44,9 +42,9 @@ class module implements \local_oer\modules\module {
      */
     const ROLES = [
         // Creator, not interesting for OER.
-            'Presenter',
-            'Contributor',
-            'Rightsholder',
+        'Presenter',
+        'Contributor',
+        'Rightsholder',
     ];
 
     /**
@@ -61,7 +59,7 @@ class module implements \local_oer\modules\module {
         // TODO: Implement behaviour for multiple instances.
         // This will also affect the write back function.
         $settings = settings_api::get_default_ocinstance();
-        $videos = $this->load_videos($courseid, $settings->id);
+        $videos = api_helper::load_videos($courseid, $settings->id);
         $elements = new elements();
         if (empty($videos)) {
             return $elements;
@@ -78,11 +76,11 @@ class module implements \local_oer\modules\module {
             }
             $element = new element($creator, element::OERTYPE_EXTERNAL);
             $identifier = identifier::compose('opencast', $instance,
-                    'video', 'identifier', $video->identifier);
+                'video', 'identifier', $video->identifier);
             $element->set_identifier($identifier);
             $element->set_origin('opencast', 'origin', 'oermod_opencast');
             $element->set_title($video->title);
-            $license = $this->match_licence('opencast', $video->license);
+            $license = api_helper::match_licence('opencast', $video->license);
             $element->set_license($license);
             if ($addpeople) {
                 foreach ($video->presenter as $presenter) {
@@ -110,8 +108,8 @@ class module implements \local_oer\modules\module {
                 $element->add_information('series', 'oermod_opencast', $video->series, null, '');
             }
             $element->add_information('origin', 'local_oer',
-                    get_string('url', 'moodle'), null, '',
-                    $element->get_source());
+                get_string('url', 'moodle'), null, '',
+                $element->get_source());
 
             if (isset($video->publications[0]->media)) {
                 $durations = [];
@@ -136,55 +134,13 @@ class module implements \local_oer\modules\module {
     }
 
     /**
-     * Use the opencast API to load all videos for a Moodle course.
-     *
-     * @param int $courseid Moodle course id.
-     * @param int $instanceid Opencast instance id stored in tool_opencast settings.
-     * @return array
-     * @throws \dml_exception
-     * @throws \moodle_exception
-     */
-    private function load_videos(int $courseid, int $instanceid): array {
-        // A course can have more than one series.
-        global $DB;
-        $list = $DB->get_records('tool_opencast_series', ['courseid' => $courseid]);
-        $videos = [];
-        foreach ($list as $series) {
-            $params = [
-                    'sign' => false,
-                    'withacl' => false,
-                    'withmetadata' => false,
-                    'withpublications' => true,
-                    'sort' => [
-                            'start_date' => 'DESC',
-                    ],
-            ];
-
-            $api = new api($instanceid);
-            $response = $api->opencastapi->eventsApi->getBySeries($series->series, $params);
-            $code = $response['code'];
-
-            if ($code != 200) {
-                logger::add($courseid, logger::LOGERROR,
-                        "OERmod opencast: could not reach opencast server. Status Code:$code", 'oermod_opencast');
-                continue;
-            }
-            if (empty($response['body'])) {
-                continue;
-            }
-            $videos = array_merge($videos, $response['body']);
-        }
-        return $videos;
-    }
-
-    /**
      * Fields that can be written back from local_oer to the source.
      *
      * @return array[]
      */
     public function writable_fields(): array {
         return [
-                ['license', 'moodle'],
+            ['license', 'moodle'],
         ];
     }
 
@@ -198,33 +154,7 @@ class module implements \local_oer\modules\module {
      * @throws \moodle_exception
      */
     public function write_to_source(\local_oer\modules\element $element): void {
-        $decompose = identifier::decompose($element->get_identifier());
-        if ($decompose->platform != 'opencast' || $decompose->type != 'video' || $decompose->valuetype != 'identifier') {
-            return;
-        }
-        $moodlelicence = $element->get_license();
-        if ($moodlelicence == 'unknown') {
-            return; // Do not update unknown licence.
-        }
-        $settings = settings_api::get_default_ocinstance();
-        $api = new api($settings->id);
-        $licence = $this->match_licence('moodle', $moodlelicence);
-        $update = [
-                'id' => 'license',
-                'value' => $licence,
-        ];
-        $metadata = json_encode([$update]);
-        $type = 'dublincore/episode';
-
-        $response = $api->opencastapi->eventsApi->updateMetadata($decompose->value, $type, $metadata);
-        $success = $this->republish_metadata($api, $decompose->value, $response['code']);
-        if (!$success) {
-            global $DB;
-            $courseid = $DB->get_field('local_oer_elements', 'courseid', ['identifier' => $element->get_identifier()]);
-            logger::add($courseid, logger::LOGERROR,
-                    'Workflow could not be started, so license not visible: ' . $element->get_identifier(),
-                    'oermod_opencast');
-        }
+        api_helper::write_to_source($element->get_identifier(), $element->get_license());
     }
 
     /**
@@ -235,7 +165,7 @@ class module implements \local_oer\modules\module {
     public function supported_licences(): array {
         $licences = \license_manager::get_active_licenses_as_array();
         $result = [];
-        foreach ($this->licence_mapping() as $moodle => $opencast) {
+        foreach (api_helper::licence_mapping() as $moodle => $opencast) {
             if (isset($licences[$moodle])) {
                 $result[] = $moodle;
             }
@@ -250,59 +180,10 @@ class module implements \local_oer\modules\module {
      */
     public function supported_roles(): array {
         return [
-                [self::ROLES[2], 'rightsholder', 'oermod_opencast', self::ROLE_REQUIRED],
-                [self::ROLES[0], 'presenter', 'oermod_opencast'],
-                [self::ROLES[1], 'contributor', 'oermod_opencast'],
+            [self::ROLES[2], 'rightsholder', 'oermod_opencast', self::ROLE_REQUIRED],
+            [self::ROLES[0], 'presenter', 'oermod_opencast'],
+            [self::ROLES[1], 'contributor', 'oermod_opencast'],
         ];
-    }
-
-    /**
-     * Map the Moodle licences to its Opencast counterpart.
-     *
-     * The shortnames of the licenses will be matched, not the visible names.
-     * Only the base licences are matched here.
-     *
-     * TODO: should this be more dynamic for custom licences?
-     * TODO: what happens if some licences are deactivated in opencast?
-     *
-     * @return array
-     */
-    private function licence_mapping(): array {
-        return [
-                'unknown' => '', // Empty string in Opencast, also all other licenses not matchable.
-                'allrightsreserved' => 'ALLRIGHTS',
-                'public' => 'CC0',
-                'cc-4.0' => 'CC-BY',
-                'cc-nc-4.0' => 'CC-BY-NC',
-                'cc-nd-4.0' => 'CC-BY-ND',
-                'cc-nc-nd-4.0' => 'CC-BY-NC-ND',
-                'cc-nc-sa-4.0' => 'CC-BY-NC-SA',
-                'cc-sa-4.0' => 'CC-BY-SA',
-        ];
-    }
-
-    /**
-     * Match a given licence to its counterpart.
-     *
-     * @param string $source The source can be either 'moodle' or 'opencast'.
-     * @param string $licence Licence shortname string.
-     * @return string
-     * @throws \coding_exception
-     */
-    private function match_licence(string $source, string $licence): string {
-        if (!in_array($source, ['moodle', 'opencast'])) {
-            throw new \coding_exception('Wrong source given, only "moodle" or "opencast" are allowed.');
-        }
-
-        foreach ($this->licence_mapping() as $moodle => $opencast) {
-            if ($source == 'moodle' && $moodle == $licence) {
-                return $opencast;
-            }
-            if ($source == 'opencast' && $opencast == $licence) {
-                return $moodle;
-            }
-        }
-        return $source == 'moodle' ? '' : 'unknown';
     }
 
     /**
@@ -315,105 +196,6 @@ class module implements \local_oer\modules\module {
      * @throws \moodle_exception
      */
     public function set_element_to_release(\local_oer\modules\element $element): bool {
-        $decompose = identifier::decompose($element->get_identifier());
-        $settings = settings_api::get_default_ocinstance();
-        $api = new api($settings->id);
-        $response = $api->opencastapi->eventsApi->getAcl($decompose->value);
-        global $DB;
-        $courseid = $DB->get_field('local_oer_snapshot', 'courseid', ['identifier' => $element->get_identifier()]);
-        if (empty($response) || $response['code'] != 200 || $response['reason'] != 'OK') {
-            // Webservice call did not succeed.
-            // TODO: maybe this should be retried later? Add an adhoc task for this?
-            logger::add($courseid, logger::LOGERROR,
-                    'Could not set element to release: ' . $element->get_identifier(),
-                    'oermod_opencast');
-            return false;
-        }
-        $success = false;
-        $anonymousrole = "ROLE_ANONYMOUS";
-        $update = false;
-        $found = false;
-
-        // All entries have to be returned, else they will be deleted.
-        // Test if anonymous is already in the list, if true, test allow and action.
-        // If false, add it to the list.
-        $removewrite = get_config('oermod_opencast', 'rolestoremovewrite');
-        $removewrite = str_replace('{{courseid}}', $courseid, $removewrite);
-        $list = explode("\r\n", $removewrite);
-        $aclsettings = $response['body'];
-        foreach ($aclsettings as $key => $role) {
-            switch ($role->role) {
-                case $anonymousrole:
-                    $result = $this->remove_write_permission($role, $key, $aclsettings);
-                    $update = $update ?: $result;
-                    if (!$update) {
-                        $found = true;
-                    }
-                    break;
-                default:
-            }
-            if (in_array($role->role, $list)) {
-                $result = $this->remove_write_permission($role, $key, $aclsettings);
-                $update = $update ?: $result;
-            }
-        }
-
-        // If the setting has not been found, add it and trigger update.
-        if (!$found) {
-            $update = true;
-            $acl = new \stdClass();
-            $acl->allow = true;
-            $acl->role = $anonymousrole;
-            $acl->action = "read";
-            $aclsettings[] = $acl;
-        }
-
-        if ($update) {
-            $response = $api->opencastapi->eventsApi->updateAcl($decompose->value, $aclsettings);
-            $success = $this->republish_metadata($api, $decompose->value, $response['code']);
-        }
-        return $success;
-    }
-
-    /**
-     * Remove the write flag from an ACL role.
-     *
-     * @param \stdClass $role
-     * @param string $key
-     * @param array $aclsettings
-     * @return bool
-     */
-    private function remove_write_permission(\stdClass $role, string $key, array &$aclsettings): bool {
-        if ($role->action == 'write') {
-            $aclsettings[$key]->allow = false;
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * After something has been written back to opencast, the video has to run a workflow so that the changes are visible.
-     *
-     * @param api $api tool_opencast api
-     * @param string $videoid Opencast video id
-     * @param int $code Http response code
-     * @return bool
-     */
-    private function republish_metadata(api $api, string $videoid, int $code) {
-        if ($code == 204) {
-            // Workflow to republish metadata needs to be triggered.
-            $workflow = $api->opencastapi->workflowsApi->run(
-                    $videoid,
-                    'republish-metadata',
-                    [],
-                    false,
-                    false
-            );
-            if ($workflow) {
-                return true;
-            }
-        }
-        return false;
-
+        return api_helper::set_element_to_release($element->get_identifier());
     }
 }

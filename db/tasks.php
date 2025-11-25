@@ -19,20 +19,21 @@
  *
  * @package    oermod_opencast
  * @author     Christian Ortner <christian.ortner@tugraz.at>
- * @copyright  2023 Educational Technologies, Graz, University of Technology
+ * @copyright  2025 Educational Technologies, Graz, University of Technology
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2025112500;
-$plugin->requires = 2024100707;
-$plugin->component = 'oermod_opencast';
-$plugin->release = 'v1.0.3';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->dependencies = [
-        'local_oer' => 2023111701, // Older versions do not have mod subplugin support.
-        'tool_opencast' => 2023112200, // Needed for API access.
-        'block_opencast' => 2023112200, // Needed for series id.
+$tasks = [
+        [
+                'classname' => 'oermod_opencast\task\check_released_videos_task',
+                'blocking' => 0,
+                'minute' => '22',
+                'hour' => '23',
+                'day' => '*',
+                'dayofweek' => '1,4',
+                'month' => '*',
+                'disabled' => 0,
+        ],
 ];
-$plugin->supported = [405, 405];
