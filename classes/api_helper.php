@@ -45,7 +45,7 @@ class api_helper {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    private static function get_api(): api {
+    public static function get_api(): api {
         if (self::$api == null) {
             $settings = settings_api::get_default_ocinstance();
             self::$api = new api($settings->id);
@@ -111,8 +111,7 @@ class api_helper {
         if ($moodlelicence == 'unknown') {
             return; // Do not update unknown licence.
         }
-        $settings = settings_api::get_default_ocinstance();
-        $api = new api($settings->id);
+        $api = self::get_api();
         $licence = self::match_licence('moodle', $moodlelicence);
         $update = [
             'id' => 'license',
@@ -233,8 +232,7 @@ class api_helper {
      */
     public static function set_element_to_release(string $identifier): bool {
         $decompose = identifier::decompose($identifier);
-        $settings = settings_api::get_default_ocinstance();
-        $api = new api($settings->id);
+        $api = self::get_api();
         $response = $api->opencastapi->eventsApi->getAcl($decompose->value);
         global $DB;
         $courseid = $DB->get_field('local_oer_snapshot', 'courseid', ['identifier' => $identifier]);

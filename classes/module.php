@@ -65,12 +65,16 @@ class module implements \local_oer\modules\module {
         }
         $addpeople = get_config('oermod_opencast', 'addpeopleandroles');
 
+        $settings = settings_api::get_default_ocinstance();
         $instance = settings_api::get_apiurl($settings->id);
         $creator = "oermod_opencast\module";
         foreach ($videos as $video) {
             if ($video->processing_state != 'SUCCEEDED' || empty($video->publications)) {
                 // Only show working videos.
                 // Possible states: INSTANTIATED, RUNNING, PAUSED, SUCCEEDED, FAILED, SKIPPED, RETRY.
+                // TODO: when workflows are running, the videos are not returned.
+                //       That leads to an error in the local_oer UI when a user updates the licence of the video.
+                //       The video is not returned and the ajax call gets an error.
                 continue;
             }
             $element = new element($creator, element::OERTYPE_EXTERNAL);

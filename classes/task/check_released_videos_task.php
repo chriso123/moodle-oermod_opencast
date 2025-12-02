@@ -29,10 +29,9 @@ defined('MOODLE_INTERNAL') || die();
 
 use core\task\scheduled_task;
 use local_oer\identifier;
+use local_oer\logger;
 use oermod_opencast\api_helper;
 use oermod_opencast\message;
-use tool_opencast\local\api;
-use tool_opencast\local\settings_api;
 
 require_once($CFG->libdir . '/clilib.php');
 
@@ -68,8 +67,7 @@ class check_released_videos_task extends scheduled_task {
         $found = [];
         $errors = [];
 
-        $settings = settings_api::get_default_ocinstance();
-        $api = new api($settings->id);
+        $api = api_helper::get_api();
 
         // Step 2: Check if something needs to be done.
         foreach ($released as $snapshot) {
@@ -123,8 +121,10 @@ class check_released_videos_task extends scheduled_task {
         // Step 4: Set videos to public and remove write permissions for teachers.
         foreach ($tofix as $snapshot) {
             cli_writeln('Fix permissions for: ' . $snapshot['snapshot']->identifier);
-            api_helper::set_element_to_release($snapshot['snapshot']->identifier);
-            api_helper::republish_metadata($snapshot['snapshot']->identifier);
+            $success = api_helper::set_element_to_release($snapshot['snapshot']->identifier);
+            logger::add($snapshot['snapshot']->courseid, $success ? logger::LOGSUCCESS : logger::LOGERROR,
+                $success ? 'Fixed permissions for: ' . $snapshot['snapshot']->identifier
+                    : 'Error fixing permissions for: ' . $snapshot['snapshot']->identifier);
         }
 
         // Step 5: If there are any videos missing send notifications.
