@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 
 use core\task\scheduled_task;
 use local_oer\identifier;
+use oermod_opencast\api_helper;
 use oermod_opencast\message;
 use tool_opencast\local\api;
 use tool_opencast\local\settings_api;
@@ -59,18 +60,20 @@ class check_released_videos_task extends scheduled_task {
     public function execute() {
         global $DB;
         // Step 1: Get all released videos.
-        $sql = 'SELECT * FROM {local_oer_snapshot} WHERE identifier LIKE ?';
+        $sql = 'SELECT DISTINCT(identifier), courseid, title FROM {local_oer_snapshot} ' .
+            'WHERE identifier LIKE ? ORDER BY releasenumber DESC';
         $released = $DB->get_records_sql($sql, ['oer:opencast@%']);
-        cli_writeln('Found ' . count($released) . ' release snapshots for opencast videos.');
+        cli_writeln(count($released) . ' release snapshots for opencast videos will be checked.');
         $notfound = [];
         $found = [];
         $errors = [];
 
+        $settings = settings_api::get_default_ocinstance();
+        $api = new api($settings->id);
+
         // Step 2: Check if something needs to be done.
         foreach ($released as $snapshot) {
             $decompose = identifier::decompose($snapshot->identifier);
-            $settings = settings_api::get_default_ocinstance();
-            $api = new api($settings->id);
             $response = $api->opencastapi->eventsApi->getAcl($decompose->value);
             switch ($response['code']) {
                 case 200:
@@ -92,14 +95,37 @@ class check_released_videos_task extends scheduled_task {
                     ];
             }
         }
+        cli_writeln('------------');
+        cli_writeln(count($found) . ' Videos will be checked for their permissions.');
+        cli_writeln((count($errors) + count($notfound)) . ' Videos are missing or have errors.' .
+            ((count($errors) + count($notfound)) > 0 ? ' Emails will be sent if necessary.' : ''));
+        cli_writeln('------------');
 
-        // Step 3: Fix
+        // Step 3: Check if videos are still publicly available and teachers cannot delete them.
+        $tofix = [];
         foreach ($found as $snapshot) {
-
+            $anonymous = false;
+            $canwrite = false;
+            foreach ($snapshot['response']['body'] as $permission) {
+                if ($permission->role == 'ROLE_ANONYMOUS') {
+                    $anonymous = true;
+                }
+                if ($permission->role == $snapshot['snapshot']->courseid . '_instructor' && $permission->action == 'write' &&
+                    $permission->allow) {
+                    $canwrite = true;
+                }
+            }
+            if (!$anonymous || $canwrite) {
+                $tofix[$snapshot->identifier] = $snapshot;
+            }
         }
 
         // Step 4: Set videos to public and remove write permissions for teachers.
-        // TODO: output steps, statistic and identifiers.
+        foreach ($tofix as $snapshot) {
+            cli_writeln('Fix permissions for: ' . $snapshot['snapshot']->identifier);
+            api_helper::set_element_to_release($snapshot['snapshot']->identifier);
+            api_helper::republish_metadata($snapshot['snapshot']->identifier);
+        }
 
         // Step 5: If there are any videos missing send notifications.
         message::send_missingvideos($notfound, $errors);

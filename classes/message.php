@@ -26,6 +26,7 @@
 namespace oermod_opencast;
 
 use context_system;
+use local_oer\logger;
 
 /**
  * Class message
@@ -58,6 +59,8 @@ class message {
             $fullmessage .= '<p>' . get_string('message:missingvideos_body', 'oermod_opencast') . '</p>';
             $filelisthtml = '<p>';
             foreach ($missing as $video) {
+                logger::add($video['snapshot']->courseid, logger::LOGERROR,
+                    'Missing video: ' . $video['snapshot']->identifier . ' (email has been sent to admins)', 'oermod_opencast');
                 $filelisthtml .= '* CourseID: ' . $video['snapshot']->courseid . ' | ' .
                     $video['snapshot']->title . ' | ' .
                     $video['snapshot']->identifier . '<br>';
@@ -68,6 +71,8 @@ class message {
             $fullmessage .= '<p>' . get_string('message:errors', 'oermod_opencast') . '</p>';
             $filelisthtml = '<p>';
             foreach ($errors as $error) {
+                logger::add($video['snapshot']->courseid, logger::LOGERROR,
+                    'Error with video: ' . $video['snapshot']->identifier . ' (email has been sent to admins)', 'oermod_opencast');
                 $filelisthtml .= '* CourseID: ' . $error['snapshot']->courseid . ' | ' .
                     $error['snapshot']->title . ' | ' .
                     $error['snapshot']->identifier . '<br>';

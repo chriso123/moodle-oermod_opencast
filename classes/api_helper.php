@@ -32,15 +32,36 @@ use tool_opencast\local\settings_api;
 
 class api_helper {
     /**
+     * Cached opencast api object for request.
+     *
+     * @var null
+     */
+    private static $api = null;
+
+    /**
+     * Get opencast api.
+     *
+     * @return api
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    private static function get_api(): api {
+        if (self::$api == null) {
+            $settings = settings_api::get_default_ocinstance();
+            self::$api = new api($settings->id);
+        }
+        return self::$api;
+    }
+
+    /**
      * Use the opencast API to load all videos for a Moodle course.
      *
      * @param int $courseid Moodle course id.
-     * @param int $instanceid Opencast instance id stored in tool_opencast settings.
      * @return array
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function load_videos(int $courseid, int $instanceid): array {
+    public static function load_videos(int $courseid): array {
         // A course can have more than one series.
         global $DB;
         $list = $DB->get_records('tool_opencast_series', ['courseid' => $courseid]);
@@ -56,7 +77,7 @@ class api_helper {
                 ],
             ];
 
-            $api = new api($instanceid);
+            $api = self::get_api();
             $response = $api->opencastapi->eventsApi->getBySeries($series->series, $params);
             $code = $response['code'];
 

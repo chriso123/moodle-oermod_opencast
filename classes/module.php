@@ -58,8 +58,7 @@ class module implements \local_oer\modules\module {
     public function load_elements(int $courseid): \local_oer\modules\elements {
         // TODO: Implement behaviour for multiple instances.
         // This will also affect the write back function.
-        $settings = settings_api::get_default_ocinstance();
-        $videos = api_helper::load_videos($courseid, $settings->id);
+        $videos = api_helper::load_videos($courseid);
         $elements = new elements();
         if (empty($videos)) {
             return $elements;
