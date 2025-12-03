@@ -28,29 +28,44 @@ namespace oermod_opencast;
 use local_oer\identifier;
 use local_oer\logger;
 use tool_opencast\local\api;
+use tool_opencast\local\api_testable;
 use tool_opencast\local\settings_api;
 
 class api_helper {
     /**
      * Cached opencast api object for request.
      *
-     * @var null
+     * @var api|api_testable|null
      */
-    private static $api = null;
+    private static api|api_testable|null $api = null;
 
     /**
-     * Get opencast api.
+     * Get the tool_opencast api.
      *
-     * @return api
+     * @param api_testable|null $api Inject tool_opencast api_testable for unit testing.
+     * @return api|api_testable
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function get_api(): api {
-        if (self::$api == null) {
+    public static function get_api(api_testable $api = null): api|api_testable {
+        if ($api !== null) {
+            self::$api = $api;
+        } else if (self::$api == null) {
             $settings = settings_api::get_default_ocinstance();
             self::$api = new api($settings->id);
         }
         return self::$api;
+    }
+
+    /**
+     * Resets the cached API.
+     *
+     * Use only in unit tests to reset static cache between tests.
+     *
+     * @return void
+     */
+    public static function reset_api(): void {
+        self::$api = null;
     }
 
     /**
