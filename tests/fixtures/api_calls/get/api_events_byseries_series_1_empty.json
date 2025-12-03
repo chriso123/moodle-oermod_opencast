@@ -1,0 +1,5 @@
+{
+  "resource": "/api/events?filter=is_part_of:1234-1234-1234-1234-1234&sort=start_date:DESC&sign=false&withacl=false&withmetadata=false&withpublications=true",
+  "status": 200,
+  "body": []
+}

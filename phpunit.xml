@@ -25,7 +25,7 @@
 
     <coverage>
         <include>
-            <directory suffix=".php">classes/privacy</directory>
+            <directory suffix=".php">classes</directory>
         </include>
     </coverage>
 </phpunit>
