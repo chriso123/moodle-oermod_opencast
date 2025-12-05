@@ -58,7 +58,7 @@ class message {
         if (!empty($missing)) {
             $fullmessage .= '<p>' . get_string('message:missingvideos_body', 'oermod_opencast') . '</p>';
             $filelisthtml = '<p>';
-            logger::add(1, logger::LOGERROR, count($missing) . ' missing videos. Notification has been sent to admins.',
+            logger::add(0, logger::LOGERROR, count($missing) . ' missing videos. Notification has been sent to admins.',
                 'oermod_opencast');
             foreach ($missing as $video) {
                 $filelisthtml .= '* CourseID: ' . $video['snapshot']->courseid . ' | ' .
@@ -70,7 +70,7 @@ class message {
         if (!empty($errors)) {
             $fullmessage .= '<p>' . get_string('message:errors', 'oermod_opencast') . '</p>';
             $filelisthtml = '<p>';
-            logger::add(1, logger::LOGERROR, count($errors) . ' errors with videos. Notification has been sent to admins.',
+            logger::add(0, logger::LOGERROR, count($errors) . ' errors with videos. Notification has been sent to admins.',
                 'oermod_opencast');
             foreach ($errors as $error) {
                 $filelisthtml .= '* CourseID: ' . $error['snapshot']->courseid . ' | ' .

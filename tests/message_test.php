@@ -23,6 +23,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_oer\logger;
+
 require_once(__DIR__ . '/helper/testcourse.php');
 
 /**
@@ -108,6 +110,12 @@ class message_test extends \advanced_testcase {
         $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
+        // The messages have courseid 0, as they do not belong to a specific course.
+        $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
+        $this->assertCount(1, $logs);
+        $this->assertEquals('1 missing videos. Notification has been sent to admins.', $logs[array_key_first($logs)]->message);
+        $this->assertEquals('oermod_opencast', $logs[array_key_first($logs)]->component);
+
         // Case 3: error array has an entry.
         $sink = $this->redirectEmails();
         $errors = [
@@ -129,6 +137,11 @@ class message_test extends \advanced_testcase {
         $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
+        $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
+        $this->assertCount(2, $logs, 'missing and error');
+        $this->assertEquals('1 errors with videos. Notification has been sent to admins.', $logs[array_key_last($logs)]->message);
+        $this->assertEquals('oermod_opencast', $logs[array_key_last($logs)]->component);
+
         // Case 4: both arrays have entries.
         $sink = $this->redirectEmails();
         \oermod_opencast\message::send_missingvideos($missing, $errors);
@@ -146,6 +159,9 @@ class message_test extends \advanced_testcase {
         $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
+        $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
+        $this->assertCount(4, $logs);
+
         // Case 5: Manager also gets message.
         assign_capability('oermod/opencast:missingvideos', CAP_ALLOW, $manager->id, $context);
         $this->assertTrue(has_capability('oermod/opencast:missingvideos', $context, $user4));
@@ -156,5 +172,8 @@ class message_test extends \advanced_testcase {
         $this->assertCount(2, $messages);
         $this->assertStringContainsString('admin', $messages[0]->to);
         $this->assertEquals($user4->email, $messages[1]->to);
+
+        $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
+        $this->assertCount(6, $logs);
     }
 }
