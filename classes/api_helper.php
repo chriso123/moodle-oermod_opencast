@@ -113,20 +113,20 @@ class api_helper {
      * Write back the fields that are allowed to overwrite in the source.
      *
      * @param string $identifier Identifier of OER element.
-     * @param string $moodlelicence
-     * @return void
+     * @param string $moodlelicence Licence as defined in Moodle
+     * @return bool
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function write_to_source(string $identifier, string $moodlelicence): void {
+    public static function write_to_source(string $identifier, string $moodlelicence): bool {
         $decompose = identifier::decompose($identifier);
         if ($decompose->platform != 'opencast' || $decompose->type != 'video' || $decompose->valuetype != 'identifier') {
-            return;
+            return false;
         }
         if ($moodlelicence == 'unknown') {
-            return; // Do not update unknown licence.
+            return false; // Do not update unknown licence.
         }
-        $api = self::get_api();
+
         $licence = self::match_licence('moodle', $moodlelicence);
         $update = [
             'id' => 'license',
@@ -135,21 +135,23 @@ class api_helper {
         $metadata = json_encode([$update]);
         $type = 'dublincore/episode';
 
+        $api = self::get_api();
         $response = $api->opencastapi->eventsApi->updateMetadata($decompose->value, $type, $metadata);
         $success = self::republish_metadata($api, $decompose->value, $response['code']);
         if (!$success) {
             global $DB;
             $courseid = $DB->get_field('local_oer_elements', 'courseid', ['identifier' => $identifier]);
             logger::add($courseid, logger::LOGERROR,
-                'Workflow could not be started, so license not visible: ' . $identifier,
+                'Workflow could not be started, so licence not visible: ' . $identifier,
                 'oermod_opencast');
         }
+        return $success;
     }
 
     /**
      * Map the Moodle licences to its Opencast counterpart.
      *
-     * The shortnames of the licenses will be matched, not the visible names.
+     * The shortnames of the licences will be matched, not the visible names.
      * Only the base licences are matched here.
      *
      * TODO: should this be more dynamic for custom licences?
@@ -159,7 +161,7 @@ class api_helper {
      */
     public static function licence_mapping(): array {
         return [
-            'unknown' => '', // Empty string in Opencast, also all other licenses not matchable.
+            'unknown' => '', // Empty string in Opencast, also all other licences not matchable.
             'allrightsreserved' => 'ALLRIGHTS',
             'public' => 'CC0',
             'cc-4.0' => 'CC-BY',
@@ -204,6 +206,9 @@ class api_helper {
      * @return bool
      */
     public static function remove_write_permission(\stdClass $role, string $key, array &$aclsettings): bool {
+        if (!isset($aclsettings[$key])) {
+            return false;
+        }
         if ($role->action == 'write') {
             $aclsettings[$key]->allow = false;
             return true;
@@ -229,7 +234,7 @@ class api_helper {
                 false,
                 false
             );
-            if ($workflow) {
+            if ($workflow && $workflow['code'] == 201) {
                 return true;
             }
         }
@@ -257,7 +262,6 @@ class api_helper {
             logger::add($courseid, logger::LOGERROR, 'Could not set element to release: ' . $identifier, 'oermod_opencast');
             return false;
         }
-        $success = false;
         $anonymousrole = "ROLE_ANONYMOUS";
         $update = false;
         $found = false;
@@ -298,8 +302,8 @@ class api_helper {
 
         if ($update) {
             $response = $api->opencastapi->eventsApi->updateAcl($decompose->value, $aclsettings);
-            $success = api_helper::republish_metadata($api, $decompose->value, $response['code']);
+            return api_helper::republish_metadata($api, $decompose->value, $response['code']);
         }
-        return $success;
+        return true; // No update necessary, all good.
     }
 }
