@@ -23,7 +23,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 require_once(__DIR__ . '/helper/testcourse.php');
 
 /**
@@ -40,6 +39,7 @@ class message_test extends \advanced_testcase {
     public function setUp(): void {
         $this->resetAfterTest(true);
         $this->setAdminUser();
+        set_config('enabledmodplugins', 'folder,resource,opencast', 'local_oer');
     }
 
     /**
@@ -60,8 +60,101 @@ class message_test extends \advanced_testcase {
      * @covers ::get_users
      *
      * @return void
+     * @throws dml_exception
+     * @throws moodle_exception
      */
     public function test_send_missing_videos(): void {
-        // TODO.
+        $testcourse = new \oermod_opencast\testcourse();
+        $course = $testcourse->generate_testcourse_with_opencast_series($this->getDataGenerator());
+
+        // Create some users to check if they get messages too.
+        $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $this->getDataGenerator()->create_and_enrol($course, 'teacher');
+        $this->getDataGenerator()->create_user();
+        $user4 = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->create_user();
+        global $DB;
+        $manager = $DB->get_record('role', ['shortname' => 'manager']);
+        $context = context_system::instance();
+        role_assign($manager->id, $user4->id, $context);
+
+        // Case 1: empty missing and error arrays.
+        $sink = $this->redirectEmails();
+        \oermod_opencast\message::send_missingvideos([], []);
+        $messages = $sink->get_messages();
+        $sink->close();
+        $this->assertCount(0, $messages, 'Empty arrays, so no messages send.');
+
+        // Case 2: missing array has an entry.
+        $sink = $this->redirectEmails();
+        $video = new stdClass();
+        $video->courseid = $course->id;
+        $video->identifier = $testcourse->generate_opencast_identifier('12345');
+        $video->title = 'Unit test';
+        $missing = [
+            [
+                'snapshot' => $video,
+            ],
+        ];
+        \oermod_opencast\message::send_missingvideos($missing, []);
+        $messages = $sink->get_messages();
+        $sink->close();
+        $this->assertCount(1, $messages);
+        $this->assertStringContainsString('admin', $messages[0]->to);
+        $this->assertStringContainsString(get_string('message:missingvideos', 'oermod_opencast'), $messages[0]->subject);
+        $message = $messages[0]->body;
+        $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
+        $this->assertStringContainsString(get_string('message:missingvideos_body', 'oermod_opencast'), $message);
+        $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
+        $this->assertStringContainsString($video->identifier, $message);
+
+        // Case 3: error array has an entry.
+        $sink = $this->redirectEmails();
+        $errors = [
+            [
+                'snapshot' => $video,
+                'response' => [
+                    'code' => 401,
+                    'reason' => 'unauthorized',
+                ],
+            ],
+        ];
+        \oermod_opencast\message::send_missingvideos([], $errors);
+        $messages = $sink->get_messages();
+        $sink->close();
+        $this->assertCount(1, $messages);
+        $message = $messages[0]->body;
+        $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
+        $this->assertStringContainsString(get_string('message:errors', 'oermod_opencast'), $message);
+        $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
+        $this->assertStringContainsString($video->identifier, $message);
+
+        // Case 4: both arrays have entries.
+        $sink = $this->redirectEmails();
+        \oermod_opencast\message::send_missingvideos($missing, $errors);
+        $messages = $sink->get_messages();
+        $sink->close();
+        $this->assertCount(1, $messages);
+        $this->assertStringContainsString('admin', $messages[0]->to);
+        $this->assertStringContainsString(get_string('message:missingvideos', 'oermod_opencast'), $messages[0]->subject);
+        $message = $messages[0]->body;
+        $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
+        $this->assertStringContainsString(get_string('message:errors', 'oermod_opencast'), $message);
+        $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
+        $this->assertStringContainsString($video->identifier, $message);
+        $this->assertStringContainsString(get_string('message:missingvideos_body', 'oermod_opencast'), $message);
+        $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
+        $this->assertStringContainsString($video->identifier, $message);
+
+        // Case 5: Manager also gets message.
+        assign_capability('oermod/opencast:missingvideos', CAP_ALLOW, $manager->id, $context);
+        $this->assertTrue(has_capability('oermod/opencast:missingvideos', $context, $user4));
+        $sink = $this->redirectEmails();
+        \oermod_opencast\message::send_missingvideos($missing, $errors);
+        $messages = $sink->get_messages();
+        $sink->close();
+        $this->assertCount(2, $messages);
+        $this->assertStringContainsString('admin', $messages[0]->to);
+        $this->assertEquals($user4->email, $messages[1]->to);
     }
 }

@@ -61,8 +61,6 @@ class message {
             logger::add(1, logger::LOGERROR, count($missing) . ' missing videos. Notification has been sent to admins.',
                 'oermod_opencast');
             foreach ($missing as $video) {
-                logger::add($video['snapshot']->courseid, logger::LOGERROR,
-                    'Missing video: ' . $video['snapshot']->identifier . ' (email has been sent to admins)', 'oermod_opencast');
                 $filelisthtml .= '* CourseID: ' . $video['snapshot']->courseid . ' | ' .
                     $video['snapshot']->title . ' | ' .
                     $video['snapshot']->identifier . '<br>';
