@@ -108,13 +108,15 @@ class check_released_videos_task extends scheduled_task {
                 if ($permission->role == 'ROLE_ANONYMOUS') {
                     $anonymous = true;
                 }
-                if ($permission->role == $snapshot['snapshot']->courseid . '_instructor' && $permission->action == 'write' &&
+                // When a video is released, all courses where the video is linked should lose writing capability.
+                // So we check for every $courseid_instructor that is set.
+                if (str_contains($permission->role, '_Instructor') && $permission->action == 'write' &&
                     $permission->allow) {
                     $canwrite = true;
                 }
             }
             if (!$anonymous || $canwrite) {
-                $tofix[$snapshot->identifier] = $snapshot;
+                $tofix[$snapshot['snapshot']->identifier] = $snapshot;
             }
         }
 

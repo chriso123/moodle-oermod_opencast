@@ -23,6 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace oermod_opencast;
 
 require_once(__DIR__ . '/helper/testcourse.php');
 
@@ -62,6 +63,8 @@ class hook_callbacks_test extends \advanced_testcase {
      * So this test checks if the amd module is present in the page object.
      * As the page object properties are read-only, a reflection class is used and the
      * page_requirements_manager is replaced in page object with the mock.
+     *
+     * TODO: write also a behat test for this functionality.
      *
      * @covers ::inject_javascript_to_block_opencast
      *

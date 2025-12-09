@@ -23,6 +23,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace oermod_opencast;
+
 use local_oer\logger;
 
 require_once(__DIR__ . '/helper/testcourse.php');
@@ -62,8 +64,8 @@ class message_test extends \advanced_testcase {
      * @covers ::get_users
      *
      * @return void
-     * @throws dml_exception
-     * @throws moodle_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
      */
     public function test_send_missing_videos(): void {
         $testcourse = new \oermod_opencast\testcourse();
@@ -77,7 +79,7 @@ class message_test extends \advanced_testcase {
         $this->getDataGenerator()->create_user();
         global $DB;
         $manager = $DB->get_record('role', ['shortname' => 'manager']);
-        $context = context_system::instance();
+        $context = \context_system::instance();
         role_assign($manager->id, $user4->id, $context);
 
         // Case 1: empty missing and error arrays.
@@ -89,7 +91,7 @@ class message_test extends \advanced_testcase {
 
         // Case 2: missing array has an entry.
         $sink = $this->redirectEmails();
-        $video = new stdClass();
+        $video = new \stdClass();
         $video->courseid = $course->id;
         $video->identifier = $testcourse->generate_opencast_identifier('12345');
         $video->title = 'Unit test';
