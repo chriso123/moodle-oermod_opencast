@@ -28,8 +28,6 @@ namespace oermod_opencast;
 use local_oer\modules\element;
 use local_oer\modules\elements;
 
-require_once(__DIR__ . '/helper/testcourse.php');
-
 /**
  * Test module_test
  *
@@ -40,13 +38,15 @@ require_once(__DIR__ . '/helper/testcourse.php');
  *
  * @coversDefaultClass  \oermod_opencast\module
  */
-class module_test extends \advanced_testcase {
+final class module_test extends \advanced_testcase {
     /**
      * Test set up.
      *
      * @return void
      */
     public function setUp(): void {
+        parent::setUp();
+        require_once(__DIR__ . '/helper/testcourse.php');
         $this->resetAfterTest(true);
         $this->setAdminUser();
     }
@@ -60,6 +60,7 @@ class module_test extends \advanced_testcase {
         \oermod_opencast\api_helper::reset_api();
         $testcourse = new \oermod_opencast\testcourse();
         $testcourse->reset_json_response();
+        parent::tearDown();
     }
 
     /**

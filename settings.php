@@ -26,12 +26,16 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    $settings->add(new admin_setting_configcheckbox('oermod_opencast/addpeopleandroles',
-            new lang_string('addpeoplesetting', 'oermod_opencast'),
-            new lang_string('addpeoplesetting_description', 'oermod_opencast'),
-            '1'));
-    $settings->add(new admin_setting_configtextarea('oermod_opencast/rolestoremovewrite',
-            new lang_string('rolestoremovewrite', 'oermod_opencast'),
-            new lang_string('rolestoremovewrite_description', 'oermod_opencast'),
-            "{{courseid}}_Instructor\r\nROLE_GROUP_MH_DEFAULT_ORG_EXTERNAL_APPLICATIONS"));
+    $settings->add(new admin_setting_configcheckbox(
+        'oermod_opencast/addpeopleandroles',
+        new lang_string('addpeoplesetting', 'oermod_opencast'),
+        new lang_string('addpeoplesetting_description', 'oermod_opencast'),
+        '1'
+    ));
+    $settings->add(new admin_setting_configtextarea(
+        'oermod_opencast/rolestoremovewrite',
+        new lang_string('rolestoremovewrite', 'oermod_opencast'),
+        new lang_string('rolestoremovewrite_description', 'oermod_opencast'),
+        "{{courseid}}_Instructor\r\nROLE_GROUP_MH_DEFAULT_ORG_EXTERNAL_APPLICATIONS"
+    ));
 }

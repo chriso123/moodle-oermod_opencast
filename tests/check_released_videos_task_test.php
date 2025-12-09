@@ -28,20 +28,20 @@ namespace oermod_opencast;
 use local_oer\logger;
 use oermod_opencast\task\check_released_videos_task;
 
-require_once(__DIR__ . '/helper/testcourse.php');
-
 /**
  * Test check_released_videos_task
  *
  * @coversDefaultClass  \oermod_opencast\task\check_released_videos_task
  */
-class check_released_videos_task_test extends \advanced_testcase {
+final class check_released_videos_task_test extends \advanced_testcase {
     /**
      * Test set up.
      *
      * @return void
      */
     public function setUp(): void {
+        parent::setUp();
+        require_once(__DIR__ . '/helper/testcourse.php');
         $this->resetAfterTest(true);
         $this->setAdminUser();
         set_config('enabledmodplugins', 'folder,resource,opencast', 'local_oer');
@@ -56,6 +56,7 @@ class check_released_videos_task_test extends \advanced_testcase {
         \oermod_opencast\api_helper::reset_api();
         $testcourse = new \oermod_opencast\testcourse();
         $testcourse->reset_json_response();
+        parent::tearDown();
     }
 
     /**
@@ -80,6 +81,7 @@ class check_released_videos_task_test extends \advanced_testcase {
      *
      * @return void
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
     public function test_execute(): void {
         $testcourse = new \oermod_opencast\testcourse();

@@ -25,20 +25,20 @@
 
 namespace oermod_opencast;
 
-require_once(__DIR__ . '/helper/testcourse.php');
-
 /**
  * Test hook_callbacks_test
  *
  * @coversDefaultClass  \oermod_opencast\hook_callbacks
  */
-class hook_callbacks_test extends \advanced_testcase {
+final class hook_callbacks_test extends \advanced_testcase {
     /**
      * Test set up.
      *
      * @return void
      */
     public function setUp(): void {
+        parent::setUp();
+        require_once(__DIR__ . '/helper/testcourse.php');
         $this->resetAfterTest(true);
         $this->setAdminUser();
     }
@@ -52,6 +52,7 @@ class hook_callbacks_test extends \advanced_testcase {
         \oermod_opencast\api_helper::reset_api();
         $testcourse = new \oermod_opencast\testcourse();
         $testcourse->reset_json_response();
+        parent::tearDown();
     }
 
     /**
@@ -83,16 +84,16 @@ class hook_callbacks_test extends \advanced_testcase {
         $PAGE->set_url('/blocks/opencast/index.php', ['courseid' => $course->id, 'ocinstance' => 1]);
         $PAGE->set_pagelayout('incourse');
 
-        $mockRequires = $this->createMock(\page_requirements_manager::class);
-        $mockRequires->expects($this->once())
+        $mockrequires = $this->createMock(\page_requirements_manager::class);
+        $mockrequires->expects($this->once())
             ->method('js_call_amd')
             ->with('oermod_opencast/preventdelete-lazy', 'init');
 
         $reflection = new \ReflectionClass($PAGE);
         $property = $reflection->getProperty('_requires');
-        $originalRequires = $property->getValue($PAGE);
-        $property->setValue($PAGE, $mockRequires);
+        $originalrequires = $property->getValue($PAGE);
+        $property->setValue($PAGE, $mockrequires);
         \oermod_opencast\hook_callbacks::inject_javascript_to_block_opencast();
-        $property->setValue($PAGE, $originalRequires);
+        $property->setValue($PAGE, $originalrequires);
     }
 }

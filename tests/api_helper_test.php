@@ -25,8 +25,6 @@
 
 namespace oermod_opencast;
 
-require_once(__DIR__ . '/helper/testcourse.php');
-
 use local_oer\logger;
 
 /**
@@ -34,13 +32,15 @@ use local_oer\logger;
  *
  * @coversDefaultClass  \oermod_opencast\api_helper
  */
-class api_helper_test extends \advanced_testcase {
+final class api_helper_test extends \advanced_testcase {
     /**
      * Test set up.
      *
      * @return void
      */
     public function setUp(): void {
+        parent::setUp();
+        require_once(__DIR__ . '/helper/testcourse.php');
         $this->resetAfterTest(true);
         $this->setAdminUser();
     }
@@ -54,6 +54,7 @@ class api_helper_test extends \advanced_testcase {
         api_helper::reset_api();
         $testcourse = new testcourse();
         $testcourse->reset_json_response();
+        parent::tearDown();
     }
 
     /**
@@ -119,8 +120,10 @@ class api_helper_test extends \advanced_testcase {
         $this->assertCount(1, $entries);
         $this->assertEquals($course->id, $entries[array_key_first($entries)]->courseid);
         $this->assertEquals(logger::LOGERROR, $entries[array_key_first($entries)]->type);
-        $this->assertEquals('OERmod opencast: could not reach opencast server. Status Code:404',
-            $entries[array_key_first($entries)]->message);
+        $this->assertEquals(
+            'OERmod opencast: could not reach opencast server. Status Code:404',
+            $entries[array_key_first($entries)]->message
+        );
         $this->assertEquals('oermod_opencast', $entries[array_key_first($entries)]->component);
     }
 
@@ -219,8 +222,10 @@ class api_helper_test extends \advanced_testcase {
         $this->assertCount(1, $logs);
         $this->assertEquals($course->id, $logs[array_key_first($logs)]->courseid);
         $this->assertEquals(logger::LOGERROR, $logs[array_key_first($logs)]->type);
-        $this->assertEquals('Workflow could not be started, so licence not visible: ' . $ocidentifier,
-            $logs[array_key_first($logs)]->message);
+        $this->assertEquals(
+            'Workflow could not be started, so licence not visible: ' . $ocidentifier,
+            $logs[array_key_first($logs)]->message
+        );
         $this->assertEquals('oermod_opencast', $logs[array_key_first($logs)]->component);
     }
 

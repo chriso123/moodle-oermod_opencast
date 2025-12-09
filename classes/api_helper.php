@@ -31,6 +31,11 @@ use tool_opencast\local\api;
 use tool_opencast\local\api_testable;
 use tool_opencast\local\settings_api;
 
+/**
+ * Class api_helper
+ *
+ * Contains all functions that use the opencast api.
+ */
 class api_helper {
     /**
      * Cached opencast api object for request.
@@ -47,7 +52,7 @@ class api_helper {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function get_api(api_testable $api = null): api|api_testable {
+    public static function get_api(?api_testable $api = null): api|api_testable {
         if ($api !== null) {
             self::$api = $api;
         } else if (self::$api == null) {
@@ -97,8 +102,12 @@ class api_helper {
             $code = $response['code'];
 
             if ($code != 200) {
-                logger::add($courseid, logger::LOGERROR,
-                    "OERmod opencast: could not reach opencast server. Status Code:$code", 'oermod_opencast');
+                logger::add(
+                    $courseid,
+                    logger::LOGERROR,
+                    "OERmod opencast: could not reach opencast server. Status Code:$code",
+                    'oermod_opencast'
+                );
                 continue;
             }
             if (empty($response['body'])) {
@@ -141,9 +150,12 @@ class api_helper {
         if (!$success) {
             global $DB;
             $courseid = $DB->get_field('local_oer_elements', 'courseid', ['identifier' => $identifier]);
-            logger::add($courseid, logger::LOGERROR,
+            logger::add(
+                $courseid,
+                logger::LOGERROR,
                 'Workflow could not be started, so licence not visible: ' . $identifier,
-                'oermod_opencast');
+                'oermod_opencast'
+            );
         }
         return $success;
     }
@@ -276,7 +288,7 @@ class api_helper {
         foreach ($aclsettings as $key => $role) {
             switch ($role->role) {
                 case $anonymousrole:
-                    $result = api_helper::remove_write_permission($role, $key, $aclsettings);
+                    $result = self::remove_write_permission($role, $key, $aclsettings);
                     $update = $update ?: $result;
                     if (!$update) {
                         $found = true;
@@ -285,7 +297,7 @@ class api_helper {
                 default:
             }
             if (in_array($role->role, $list)) {
-                $result = api_helper::remove_write_permission($role, $key, $aclsettings);
+                $result = self::remove_write_permission($role, $key, $aclsettings);
                 $update = $update ?: $result;
             }
         }
@@ -302,7 +314,7 @@ class api_helper {
 
         if ($update) {
             $response = $api->opencastapi->eventsApi->updateAcl($decompose->value, $aclsettings);
-            return api_helper::republish_metadata($api, $decompose->value, $response['code']);
+            return self::republish_metadata($api, $decompose->value, $response['code']);
         }
         return true; // No update necessary, all good.
     }

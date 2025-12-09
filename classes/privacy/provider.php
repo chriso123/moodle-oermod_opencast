@@ -29,7 +29,6 @@ namespace oermod_opencast\privacy;
  * Class provider
  */
 class provider implements \core_privacy\local\metadata\null_provider {
-
     /**
      * Null provider, does not store any data.
      *

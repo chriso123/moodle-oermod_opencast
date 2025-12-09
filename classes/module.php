@@ -73,13 +73,18 @@ class module implements \local_oer\modules\module {
                 // Only show working videos.
                 // Possible states: INSTANTIATED, RUNNING, PAUSED, SUCCEEDED, FAILED, SKIPPED, RETRY.
                 // TODO: when workflows are running, the videos are not returned.
-                //       That leads to an error in the local_oer UI when a user updates the licence of the video.
-                //       The video is not returned and the ajax call gets an error.
+                // That leads to an error in the local_oer UI when a user updates the licence of the video.
+                // The video is not returned and the ajax call gets an error.
                 continue;
             }
             $element = new element($creator, element::OERTYPE_EXTERNAL);
-            $identifier = identifier::compose('opencast', $instance,
-                'video', 'identifier', $video->identifier);
+            $identifier = identifier::compose(
+                'opencast',
+                $instance,
+                'video',
+                'identifier',
+                $video->identifier
+            );
             $element->set_identifier($identifier);
             $element->set_origin('opencast', 'origin', 'oermod_opencast');
             $element->set_title($video->title);
@@ -118,9 +123,14 @@ class module implements \local_oer\modules\module {
             if (!empty($video->series)) {
                 $element->add_information('series', 'oermod_opencast', $video->series, null, '');
             }
-            $element->add_information('origin', 'local_oer',
-                get_string('url', 'moodle'), null, '',
-                $element->get_source());
+            $element->add_information(
+                'origin',
+                'local_oer',
+                get_string('url', 'moodle'),
+                null,
+                '',
+                $element->get_source()
+            );
 
             $durations = [];
             // As the different formats can have a different duration, collect them all and take the longest.

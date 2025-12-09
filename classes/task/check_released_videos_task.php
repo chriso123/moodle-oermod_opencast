@@ -110,8 +110,10 @@ class check_released_videos_task extends scheduled_task {
                 }
                 // When a video is released, all courses where the video is linked should lose writing capability.
                 // So we check for every $courseid_instructor that is set.
-                if (str_contains($permission->role, '_Instructor') && $permission->action == 'write' &&
-                    $permission->allow) {
+                if (
+                    str_contains($permission->role, '_Instructor') && $permission->action == 'write' &&
+                    $permission->allow
+                ) {
                     $canwrite = true;
                 }
             }
@@ -124,9 +126,12 @@ class check_released_videos_task extends scheduled_task {
         foreach ($tofix as $snapshot) {
             cli_writeln('Fix permissions for: ' . $snapshot['snapshot']->identifier);
             $success = api_helper::set_element_to_release($snapshot['snapshot']->identifier);
-            logger::add($snapshot['snapshot']->courseid, $success ? logger::LOGSUCCESS : logger::LOGERROR,
+            logger::add(
+                $snapshot['snapshot']->courseid,
+                $success ? logger::LOGSUCCESS : logger::LOGERROR,
                 $success ? 'Fixed permissions for: ' . $snapshot['snapshot']->identifier
-                    : 'Error fixing permissions for: ' . $snapshot['snapshot']->identifier);
+                : 'Error fixing permissions for: ' . $snapshot['snapshot']->identifier
+            );
         }
 
         // Step 5: If there are any videos missing send notifications.

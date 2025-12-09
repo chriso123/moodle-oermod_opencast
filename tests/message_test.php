@@ -27,20 +27,20 @@ namespace oermod_opencast;
 
 use local_oer\logger;
 
-require_once(__DIR__ . '/helper/testcourse.php');
-
 /**
  * Test message_test
  *
  * @coversDefaultClass  \oermod_opencast\message
  */
-class message_test extends \advanced_testcase {
+final class message_test extends \advanced_testcase {
     /**
      * Test set up.
      *
      * @return void
      */
     public function setUp(): void {
+        parent::setUp();
+        require_once(__DIR__ . '/helper/testcourse.php');
         $this->resetAfterTest(true);
         $this->setAdminUser();
         set_config('enabledmodplugins', 'folder,resource,opencast', 'local_oer');
@@ -55,6 +55,7 @@ class message_test extends \advanced_testcase {
         \oermod_opencast\api_helper::reset_api();
         $testcourse = new \oermod_opencast\testcourse();
         $testcourse->reset_json_response();
+        parent::tearDown();
     }
 
     /**

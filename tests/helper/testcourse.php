@@ -31,6 +31,7 @@ use stdClass;
 use tool_opencast\local\api_testable;
 use tool_opencast\local\settings_api;
 
+// @codingStandardsIgnoreLine
 require_once(__DIR__ . '/../../../../tests/helper/testcourse.php');
 
 /**
@@ -49,7 +50,7 @@ class testcourse extends \local_oer\testcourse {
     public function set_testapi(): void {
         $settings = settings_api::get_default_ocinstance();
         $testapi = new api_testable($settings->id);
-        api_helper::get_api($testapi); // $testapi is stored in static variable.
+        api_helper::get_api($testapi); // The $testapi is stored in a static variable.
     }
 
     /**
