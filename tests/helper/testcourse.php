@@ -133,4 +133,40 @@ class testcourse extends \local_oer\testcourse {
     public function reset_json_response(): void {
         set_config('api_testable_responses', '[]', 'tool_opencast'); // Clear if already something is set.
     }
+
+    /**
+     * Add entry to snapshot table.
+     *
+     * Some tests require that a snapshot is present.
+     * This is not a full oer element, but only the last part, the released snapshot.
+     *
+     * @param int $courseid Moodle course id
+     * @param string $identifier local_oer identifier of an object
+     * @return void
+     * @throws \dml_exception
+     */
+    public function insert_to_snapshot_table(int $courseid, string $identifier): void {
+        global $DB;
+        $snapshot = new \stdClass();
+        $snapshot->courseid = $courseid;
+        $snapshot->identifier = $identifier;
+        $snapshot->title = 'Unit test';
+        $snapshot->description = 'Unit test';
+        $snapshot->context = 1;
+        $snapshot->license = 'cc-4.0';
+        $snapshot->persons = 'Unit tester';
+        $snapshot->tags = 'Unit test';
+        $snapshot->language = 'en';
+        $snapshot->resourcetype = 1;
+        $snapshot->classification = 'Unit test';
+        $snapshot->coursemetadata = '';
+        $snapshot->releasehash = '123456789';
+        $snapshot->releasenumber = 1;
+        $snapshot->type = 1;
+        $snapshot->typedata = 'Unit test';
+        $snapshot->usermodified = 2;
+        $snapshot->timecreated = time();
+        $snapshot->timemodified = time();
+        $DB->insert_record('local_oer_snapshot', $snapshot);
+    }
 }

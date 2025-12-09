@@ -356,27 +356,7 @@ class api_helper_test extends \advanced_testcase {
         global $DB;
         // Replace the identifier of the file with an opencast identifier to simulate an opencast video.
         $DB->set_field('local_oer_elements', 'identifier', $ocidentifier, ['identifier' => $identifier]);
-        $snapshot = new \stdClass();
-        $snapshot->courseid = $course->id;
-        $snapshot->identifier = $ocidentifier;
-        $snapshot->title = 'Unit test';
-        $snapshot->description = 'Unit test';
-        $snapshot->context = 1;
-        $snapshot->license = 'cc-4.0';
-        $snapshot->persons = 'Unit tester';
-        $snapshot->tags = 'Unit test';
-        $snapshot->language = 'en';
-        $snapshot->resourcetype = 1;
-        $snapshot->classification = 'Unit test';
-        $snapshot->coursemetadata = '';
-        $snapshot->releasehash = '123456789';
-        $snapshot->releasenumber = 1;
-        $snapshot->type = 1;
-        $snapshot->typedata = 'Unit test';
-        $snapshot->usermodified = 2;
-        $snapshot->timecreated = time();
-        $snapshot->timemodified = time();
-        $DB->insert_record('local_oer_snapshot', $snapshot);
+        $testcourse->insert_to_snapshot_table($course->id, $ocidentifier);
 
         // Case 1: Acl response failure, write log.
         $testcourse->set_json_response_for_testapi('api_events_acl_fail.json', 'get');

@@ -56,11 +56,40 @@ class hook_callbacks_test extends \advanced_testcase {
     /**
      * Test inject_javascript_to_block_opencast function.
      *
+     * This test creates a mock of the page_requirements_manager. This class tracks
+     * all things a page require. Then we tell it that the oermod_opencast javascript
+     * is expected.
+     * So this test checks if the amd module is present in the page object.
+     * As the page object properties are read-only, a reflection class is used and the
+     * page_requirements_manager is replaced in page object with the mock.
+     *
      * @covers ::inject_javascript_to_block_opencast
      *
      * @return void
+     * @throws ReflectionException
+     * @throws dml_exception
      */
     public function test_inject_javascript_to_block_opencast(): void {
-        // TODO.
+        global $PAGE, $COURSE;
+        $testcourse = new \oermod_opencast\testcourse();
+        $course = $testcourse->generate_testcourse_with_opencast_series($this->getDataGenerator());
+        $COURSE = $course;
+        $identifer = $testcourse->generate_opencast_identifier('abcd-abcd-abcd-abcd-abcd');
+        $testcourse->insert_to_snapshot_table($course->id, $identifer);
+
+        $PAGE->set_url('/blocks/opencast/index.php', ['courseid' => $course->id, 'ocinstance' => 1]);
+        $PAGE->set_pagelayout('incourse');
+
+        $mockRequires = $this->createMock(\page_requirements_manager::class);
+        $mockRequires->expects($this->once())
+            ->method('js_call_amd')
+            ->with('oermod_opencast/preventdelete-lazy', 'init');
+
+        $reflection = new \ReflectionClass($PAGE);
+        $property = $reflection->getProperty('_requires');
+        $originalRequires = $property->getValue($PAGE);
+        $property->setValue($PAGE, $mockRequires);
+        \oermod_opencast\hook_callbacks::inject_javascript_to_block_opencast();
+        $property->setValue($PAGE, $originalRequires);
     }
 }
