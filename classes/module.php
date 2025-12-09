@@ -88,25 +88,33 @@ class module implements \local_oer\modules\module {
             if ($addpeople) {
                 foreach ($video->presenter as $presenter) {
                     $pres = new person();
-                    $pres->set_role(self::ROLES[1]);
+                    $pres->set_role(self::ROLES[0]);
                     $pres->set_fullname($presenter);
                     $element->add_person($pres);
                 }
                 foreach ($video->contributor as $contributor) {
                     $contrib = new person();
-                    $contrib->set_role(self::ROLES[2]);
+                    $contrib->set_role(self::ROLES[1]);
                     $contrib->set_fullname($contributor);
                     $element->add_person($contrib);
                 }
                 if (!empty($video->rightsholder)) {
                     $rolerightsholder = new person();
-                    $rolerightsholder->set_role(self::ROLES[3]);
+                    $rolerightsholder->set_role(self::ROLES[2]);
                     $rolerightsholder->set_fullname($video->rightsholder);
                     $element->add_person($rolerightsholder);
                 }
             }
 
-            $element->set_source($video->publications[0]->url);
+            // There can be multiple sources, so collect them all and prefer the one with the paella player.
+            // We only add one to the metadata for the release file.
+            $source = '';
+            foreach ($video->publications as $publication) {
+                if (empty($source) || str_contains($publication->url, 'paella')) {
+                    $source = $publication->url;
+                }
+            }
+            $element->set_source($source);
             if (!empty($video->series)) {
                 $element->add_information('series', 'oermod_opencast', $video->series, null, '');
             }
@@ -114,22 +122,23 @@ class module implements \local_oer\modules\module {
                 get_string('url', 'moodle'), null, '',
                 $element->get_source());
 
-            if (isset($video->publications[0]->media)) {
-                $durations = [];
-                foreach ($video->publications[0]->media as $media) {
+            $durations = [];
+            // As the different formats can have a different duration, collect them all and take the longest.
+            foreach ($video->publications as $publication) {
+                foreach ($publication->media as $media) {
                     $durations[$media->duration] = isset($durations[$media->duration]) ? $durations[$media->duration]++ : 0;
                 }
-                $milliseconds = empty($durations) ? [0 => 0] : array_keys($durations, max($durations));
-                $milliseconds = reset($milliseconds);
-                $duration = $milliseconds / 1000;
-                $minutes = floor($duration / 60);
-                $seconds = (int) $duration % 60;
-                $result = $minutes > 0 ? $minutes . 'min' : '';
-                $result .= $minutes > 0 && $seconds > 0 ? ' ' : '';
-                $result .= $seconds > 0 ? $seconds . 's' : '';
-                if (!empty($result)) { // Not every video has set correct length.
-                    $element->add_information('duration', 'oermod_opencast', $result, 'duration', $milliseconds);
-                }
+            }
+            $milliseconds = empty($durations) ? [0 => 0] : array_keys($durations, max($durations));
+            $milliseconds = reset($milliseconds);
+            $duration = $milliseconds / 1000;
+            $minutes = floor($duration / 60);
+            $seconds = (int) $duration % 60;
+            $result = $minutes > 0 ? $minutes . 'min' : '';
+            $result .= $minutes > 0 && $seconds > 0 ? ' ' : '';
+            $result .= $seconds > 0 ? $seconds . 's' : '';
+            if (!empty($result)) { // Not every video has set correct length.
+                $element->add_information('duration', 'oermod_opencast', $result, 'duration', $milliseconds);
             }
             $elements->add_element($element);
         }
@@ -166,6 +175,8 @@ class module implements \local_oer\modules\module {
      * @return array
      */
     public function supported_licences(): array {
+        global $CFG;
+        require_once($CFG->libdir . '/licenselib.php');
         $licences = \license_manager::get_active_licenses_as_array();
         $result = [];
         foreach (api_helper::licence_mapping() as $moodle => $opencast) {

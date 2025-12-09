@@ -5,7 +5,7 @@
     {
       "identifier": "abcd-abcd-abcd-abcd",
       "creator": "",
-      "presenter": [],
+      "presenter": ["Unit Tester", "Pres Enter"],
       "created": "2021-08-11T09:32:00Z",
       "is_part_of": "1234-1234-1234-1234-1234",
       "subjects": [],
@@ -18,11 +18,11 @@
       "duration": 0,
       "license": "",
       "archive_version": 4,
-      "contributor": [],
+      "contributor": ["Contri Butor"],
       "series": "Test series",
       "has_previews": false,
       "location": "",
-      "rightsholder": "",
+      "rightsholder": "Rights Holder",
       "publication_status": [
         "engage-player",
         "api",
@@ -100,7 +100,7 @@
                 "engage-download"
               ],
               "flavor": "presenter/delivery",
-              "duration": 13398,
+              "duration": 10000,
               "size": 1301200,
               "framecount": 321,
               "checksum": "a34b86a0878efdf436ad2b0beb3c5db8 (md5)",
@@ -112,7 +112,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         }
       ]
     },
@@ -151,7 +151,7 @@
           "id": "4152b1eb-1268-4dce-b960-8205f150cdc6",
           "media": [],
           "mediatype": "text/html",
-          "url": "https://test-opencast.de/play/abcd-abcd-abcd-abcd"
+          "url": "https://test-opencast.de/play/abcd-abcd-abcd-abce"
         },
         {
           "metadata": [],
@@ -226,7 +226,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": ""
         }
       ]
     },
@@ -340,7 +340,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         }
       ]
     },
@@ -454,7 +454,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         },
         {
           "metadata": [],
@@ -529,7 +529,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         }
       ]
     },
@@ -643,7 +643,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         },
         {
           "metadata": [],
@@ -718,7 +718,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         }
       ]
     },
@@ -832,7 +832,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         },
         {
           "metadata": [],
@@ -907,7 +907,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=abcd-abcd-abcd-abce"
         }
       ]
     },
@@ -1021,7 +1021,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         },
         {
           "metadata": [],
@@ -1096,7 +1096,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         }
       ]
     },
@@ -1210,7 +1210,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         },
         {
           "metadata": [],
@@ -1285,7 +1285,7 @@
             }
           ],
           "mediatype": "",
-          "url": "http://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
+          "url": "https://test-opencast.de/paella/ui/watch.html?id=1234-1234-1234-1234-1234"
         }
       ]
     }

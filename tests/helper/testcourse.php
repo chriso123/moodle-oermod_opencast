@@ -95,8 +95,9 @@ class testcourse extends \local_oer\testcourse {
      * @throws \coding_exception
      */
     public function generate_opencast_identifier(string $contenthash): string {
-        global $CFG;
-        return identifier::compose('opencast', $CFG->wwwroot, 'video', 'identifier', $contenthash);
+        $settings = settings_api::get_default_ocinstance();
+        $instance = settings_api::get_apiurl($settings->id);
+        return identifier::compose('opencast', $instance, 'video', 'identifier', $contenthash);
     }
 
     /**
