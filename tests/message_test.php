@@ -69,6 +69,13 @@ final class message_test extends \advanced_testcase {
      * @throws \moodle_exception
      */
     public function test_send_missing_videos(): void {
+        /*
+         * When using postgres database, the messages get buffered because the whole test environment runs inside
+         * a database transaction. So we use the following function to tell Moodle not to use a transaction but
+         * to clean up by deleting the new database entries. This test will be a bit slower then.
+         */
+        $this->preventResetByRollback();
+
         $testcourse = new \oermod_opencast\testcourse();
         $course = $testcourse->generate_testcourse_with_opencast_series($this->getDataGenerator());
 
@@ -102,11 +109,6 @@ final class message_test extends \advanced_testcase {
             ],
         ];
         \oermod_opencast\message::send_missingvideos($missing, []);
-        /*
-         * When using postgres database, the messages get buffered because the whole test environment runs inside
-         * a database transaction. This function will process the buffer and send the messages.
-         */
-        \core\message\manager::database_transaction_commited();
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);

@@ -84,6 +84,13 @@ final class check_released_videos_task_test extends \advanced_testcase {
      * @throws \moodle_exception
      */
     public function test_execute(): void {
+        /*
+         * When using postgres database, the messages get buffered because the whole test environment runs inside
+         * a database transaction. So we use the following function to tell Moodle not to use a transaction but
+         * to clean up by deleting the new database entries. This test will be a bit slower then.
+         */
+         $this->preventResetByRollback();
+
         $testcourse = new \oermod_opencast\testcourse();
         $course = $testcourse->generate_testcourse_with_opencast_series($this->getDataGenerator());
         $identifier = $testcourse->generate_opencast_identifier('abcd-abcd-abcd-abcd');
