@@ -102,6 +102,11 @@ final class message_test extends \advanced_testcase {
             ],
         ];
         \oermod_opencast\message::send_missingvideos($missing, []);
+        /*
+         * When using postgres database, the messages get buffered because the whole test environment runs inside
+         * a database transaction. This function will process the buffer and send the messages.
+         */
+        \core\message\manager::database_transaction_commited();
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
