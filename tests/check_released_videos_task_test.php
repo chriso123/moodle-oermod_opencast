@@ -89,7 +89,7 @@ final class check_released_videos_task_test extends \advanced_testcase {
          * a database transaction. So we use the following function to tell Moodle not to use a transaction but
          * to clean up by deleting the new database entries. This test will be a bit slower then.
          */
-         $this->preventResetByRollback();
+        $this->preventResetByRollback();
 
         $testcourse = new \oermod_opencast\testcourse();
         $course = $testcourse->generate_testcourse_with_opencast_series($this->getDataGenerator());
@@ -114,6 +114,15 @@ final class check_released_videos_task_test extends \advanced_testcase {
         $testcourse->reset_json_response();
         api_helper::reset_api();
         $testcourse->set_json_response_for_testapi('api_events_acl_success_w_anon.json', 'get');
+        $testcourse->set_testapi();
+
+        $this->run_execute($course->id);
+
+        $testcourse->reset_json_response();
+        api_helper::reset_api();
+        $testcourse->set_json_response_for_testapi('api_events_acl_success.json', 'get');
+        $testcourse->set_json_response_for_testapi('api_events_updateacl_success.json', 'put');
+        $testcourse->set_json_response_for_testapi('api_workflows_updatemetadata_fail.json', 'post');
         $testcourse->set_testapi();
 
         $this->run_execute($course->id);

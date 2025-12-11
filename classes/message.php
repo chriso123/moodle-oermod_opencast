@@ -39,13 +39,12 @@ class message {
      *
      * @param array $missing array of missing videos
      * @param array $errors array of videos with other errors
+     * @param array $failed array of videos that could not be released
      * @return void
      * @throws \dml_exception
-     * @throws \moodle_exception
-     * @throws \coding_exception
      */
-    public static function send_missingvideos(array $missing, array $errors): void {
-        if (empty($missing) && empty($errors)) {
+    public static function send_missingvideos(array $missing, array $errors, array $failed): void {
+        if (empty($missing) && empty($errors) && empty($failed)) {
             return;
         }
         $message = new \core\message\message();
@@ -55,6 +54,24 @@ class message {
         $message->subject = get_string('message:missingvideos', 'oermod_opencast');
         $message->fullmessageformat = FORMAT_HTML;
         $fullmessage = '';
+        if (!empty($failed)) {
+            $fullmessage .= '<p>' . get_string('message:failedvideos_body', 'oermod_opencast') . '</p>';
+            $filelisthtml = '<p>';
+            logger::add(
+                0,
+                logger::LOGERROR,
+                count($missing) . ' videos failed to be set to release. Notification has been sent to admins.',
+                'oermod_opencast'
+            );
+            foreach ($failed as $video) {
+                $filelisthtml .= self::get_video_for_message(
+                    $video['snapshot']->courseid,
+                    $video['snapshot']->title,
+                    $video['snapshot']->identifier
+                );
+            }
+            $fullmessage .= $filelisthtml . '</p>';
+        }
         if (!empty($missing)) {
             $fullmessage .= '<p>' . get_string('message:missingvideos_body', 'oermod_opencast') . '</p>';
             $filelisthtml = '<p>';
@@ -65,9 +82,11 @@ class message {
                 'oermod_opencast'
             );
             foreach ($missing as $video) {
-                $filelisthtml .= '* CourseID: ' . $video['snapshot']->courseid . ' | ' .
-                    $video['snapshot']->title . ' | ' .
-                    $video['snapshot']->identifier . '<br>';
+                $filelisthtml .= self::get_video_for_message(
+                    $video['snapshot']->courseid,
+                    $video['snapshot']->title,
+                    $video['snapshot']->identifier
+                );
             }
             $fullmessage .= $filelisthtml . '</p>';
         }
@@ -81,9 +100,11 @@ class message {
                 'oermod_opencast'
             );
             foreach ($errors as $error) {
-                $filelisthtml .= '* CourseID: ' . $error['snapshot']->courseid . ' | ' .
-                    $error['snapshot']->title . ' | ' .
-                    $error['snapshot']->identifier . '<br>';
+                $filelisthtml .= self::get_video_for_message(
+                    $error['snapshot']->courseid,
+                    $error['snapshot']->title,
+                    $error['snapshot']->identifier
+                );
                 $filelisthtml .= '&nbsp;&nbsp;&nbsp;Error: ' . $error['response']['code'] . ' | ' . $error['response']['reason'] .
                     '<br>';
             }
@@ -115,5 +136,17 @@ class message {
      */
     private static function get_users(): array {
         return array_merge(get_admins(), get_users_by_capability(context_system::instance(), 'oermod/opencast:missingvideos'));
+    }
+
+    /**
+     * Concatenate information to a single line string for message.
+     *
+     * @param int $courseid
+     * @param string $title
+     * @param string $identifier
+     * @return string
+     */
+    private static function get_video_for_message(int $courseid, string $title, string $identifier): string {
+        return "* CourseID: $courseid | $title | $identifier<br>";
     }
 }

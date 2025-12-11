@@ -32,6 +32,7 @@ $string['contributor'] = 'Beitragende:r';
 $string['creator'] = 'Ersteller:in';
 $string['duration'] = 'Dauer';
 $string['message:errors'] = 'Folgende veröffentlichte Opencast Videos haben Fehler:';
+$string['message:failedvideos_body'] = 'Die Videos konnten nicht veröffentlicht werden. Bitte überprüfen Sie dieses Problem. Möglicherweise wird dieses Problem beim nächsten Ausführen des geplanten Tasks behoben.';
 $string['message:missingvideos'] = 'Fehlende, bereits veröffentlichte Opencast Videos';
 $string['message:missingvideos_body'] = 'Folgende Opencast Videos können nicht mehr gefunden werden (Task returniert 404):';
 $string['message:missingvideos_footer'] = 'Diese Videos müssen manuell überprüft werden.';

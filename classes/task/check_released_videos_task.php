@@ -63,9 +63,10 @@ class check_released_videos_task extends scheduled_task {
             'WHERE identifier LIKE ? ORDER BY releasenumber DESC';
         $released = $DB->get_records_sql($sql, ['oer:opencast@%']);
         cli_writeln(count($released) . ' release snapshots for opencast videos will be checked.');
-        $notfound = [];
-        $found = [];
-        $errors = [];
+        $notfound = []; // 404 Error occured.
+        $found = []; // Found video in webservice response.
+        $errors = []; // Any other error than 404.
+        $failed = []; // Found the video, but the update failed.
 
         $api = api_helper::get_api();
 
@@ -126,15 +127,20 @@ class check_released_videos_task extends scheduled_task {
         foreach ($tofix as $snapshot) {
             cli_writeln('Fix permissions for: ' . $snapshot['snapshot']->identifier);
             $success = api_helper::set_element_to_release($snapshot['snapshot']->identifier);
-            logger::add(
-                $snapshot['snapshot']->courseid,
-                $success ? logger::LOGSUCCESS : logger::LOGERROR,
-                $success ? 'Fixed permissions for: ' . $snapshot['snapshot']->identifier
-                : 'Error fixing permissions for: ' . $snapshot['snapshot']->identifier
-            );
+            if ($success) {
+                logger::add(
+                    $snapshot['snapshot']->courseid,
+                    $success ? logger::LOGSUCCESS : logger::LOGERROR,
+                    $success ? 'Fixed permissions for: ' . $snapshot['snapshot']->identifier
+                        : 'Error fixing permissions for: ' . $snapshot['snapshot']->identifier
+                );
+            } else {
+                // Logger already triggered in set_element_to_release.
+                $failed[$snapshot['snapshot']->identifier] = $snapshot;
+            }
         }
 
         // Step 5: If there are any videos missing send notifications.
-        message::send_missingvideos($notfound, $errors);
+        message::send_missingvideos($notfound, $errors, $failed);
     }
 }
