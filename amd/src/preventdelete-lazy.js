@@ -30,7 +30,7 @@ import * as Str from "core/str";
  * @param {{series: id, videos: {videoid, title}}}released
  * @returns {Promise<void>}
  */
-export const init = async (released) => {
+export const init = async (released) => { // eslint-disable-line space-before-function-paren
     const series = released.series;
     const videos = released.videos;
     const action = await Str.get_string('haction', 'block_opencast');
@@ -48,12 +48,10 @@ export const init = async (released) => {
             if (thead[i].innerHTML.includes(action + '<div class="commands"></div>')) {
                 foundaction = i;
             }
-            window.console.log(thead[i].innerHTML);
             if (thead[i].innerHTML.includes(visibility)) {
                 foundvisibility = i;
             }
         }
-        window.console.log(foundvisibility, foundaction);
         if (foundaction === -1 && foundvisibility === -1) {
             return; // Nothing to do here.
         }
