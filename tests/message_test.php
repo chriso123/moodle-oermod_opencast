@@ -63,6 +63,7 @@ final class message_test extends \advanced_testcase {
      *
      * @covers ::send_missingvideos
      * @covers ::get_users
+     * @covers ::get_video_for_message
      *
      * @return void
      * @throws \dml_exception
