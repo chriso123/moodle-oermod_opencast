@@ -59,8 +59,15 @@ class check_released_videos_task extends scheduled_task {
     public function execute() {
         global $DB;
         // Step 1: Get all released videos.
-        $sql = 'SELECT identifier, courseid, title, releasenumber FROM {local_oer_snapshot} ' .
-            'WHERE identifier LIKE ? GROUP BY identifier ORDER BY releasenumber DESC';
+        $sql = "SELECT s.id, s.identifier, s.courseid, s.title, s.releasenumber
+          FROM {local_oer_snapshot} s
+          JOIN (
+              SELECT identifier, MAX(releasenumber) as maxrel
+                FROM {local_oer_snapshot}
+               WHERE identifier LIKE ?
+            GROUP BY identifier
+          ) m ON s.identifier = m.identifier AND s.releasenumber = m.maxrel
+          ORDER BY s.releasenumber DESC";
         $released = $DB->get_records_sql($sql, ['oer:opencast@%']);
         cli_writeln(count($released) . ' release snapshots for opencast videos will be checked.');
         $notfound = []; // 404 Error occured.
