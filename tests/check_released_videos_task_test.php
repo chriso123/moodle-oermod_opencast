@@ -100,6 +100,8 @@ final class check_released_videos_task_test extends \advanced_testcase {
         $testcourse->set_json_response_for_testapi('api_events_acl_success.json', 'get');
         $testcourse->set_json_response_for_testapi('api_events_updateacl_success.json', 'put');
         $testcourse->set_json_response_for_testapi('api_workflows_updatemetadata_success.json', 'post');
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'get');
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'put');
         $testcourse->set_testapi();
 
         $this->run_execute($course->id);
@@ -123,6 +125,8 @@ final class check_released_videos_task_test extends \advanced_testcase {
         $testcourse->set_json_response_for_testapi('api_events_acl_success.json', 'get');
         $testcourse->set_json_response_for_testapi('api_events_updateacl_success.json', 'put');
         $testcourse->set_json_response_for_testapi('api_workflows_updatemetadata_fail.json', 'post');
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'get');
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'put');
         $testcourse->set_testapi();
 
         $this->run_execute($course->id);

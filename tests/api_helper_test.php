@@ -158,6 +158,7 @@ final class api_helper_test extends \advanced_testcase {
      * Test write_to_source
      *
      * @covers ::write_to_source
+     * @covers ::update_metadata
      *
      * @return void
      * @throws \dml_exception
@@ -223,10 +224,40 @@ final class api_helper_test extends \advanced_testcase {
         $this->assertEquals($course->id, $logs[array_key_first($logs)]->courseid);
         $this->assertEquals(logger::LOGERROR, $logs[array_key_first($logs)]->type);
         $this->assertEquals(
-            'Workflow could not be started, so licence not visible: ' . $ocidentifier,
+            'Workflow could not be started, so licence or oer_published tag not visible: ' . $ocidentifier,
             $logs[array_key_first($logs)]->message
         );
         $this->assertEquals('oermod_opencast', $logs[array_key_first($logs)]->component);
+    }
+
+    /**
+     * Test add_published_info function.
+     *
+     * @covers ::add_published_info
+     * @covers ::update_metadata
+     *
+     * @return void
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function test_add_published_info(): void {
+        $testcourse = new testcourse();
+        $course = $testcourse->generate_testcourse_with_opencast_series($this->getDataGenerator());
+        $testcourse->sync_course_info($course->id);
+        $testcourse->set_files_to($course->id, 1, true);
+        $identifier = $testcourse->get_identifier_of_first_found_file($course);
+        $ocidentifier = $testcourse->generate_opencast_identifier('abcd-abcd-abcd-abcd');
+        global $DB;
+        // Replace the identifier of the file with an opencast identifier to simulate an opencast video.
+        $DB->set_field('local_oer_elements', 'identifier', $ocidentifier, ['identifier' => $identifier]);
+
+        $testcourse->reset_json_response();
+        api_helper::reset_api();
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'get');
+        $testcourse->set_json_response_for_testapi('api_events_updatemetadata_success.json', 'put');
+        $testcourse->set_json_response_for_testapi('api_workflows_updatemetadata_success.json', 'post');
+        $testcourse->set_testapi();
+        $this->assertTrue(api_helper::add_published_info($ocidentifier));
     }
 
     /**
@@ -380,6 +411,8 @@ final class api_helper_test extends \advanced_testcase {
         // Case 2: Remove write capabilities and add anonymous role.
         $testcourse->reset_json_response();
         api_helper::reset_api();
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'get');
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'put');
         $testcourse->set_json_response_for_testapi('api_events_acl_success.json', 'get');
         $testcourse->set_json_response_for_testapi('api_events_updateacl_success.json', 'put');
         $testcourse->set_json_response_for_testapi('api_workflows_updatemetadata_success.json', 'post');
@@ -394,6 +427,8 @@ final class api_helper_test extends \advanced_testcase {
         $testcourse->set_json_response_for_testapi('api_events_acl_success_w_anon.json', 'get');
         $testcourse->set_json_response_for_testapi('api_events_updateacl_success.json', 'put');
         $testcourse->set_json_response_for_testapi('api_workflows_updatemetadata_success.json', 'post');
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'get');
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'put');
         $testcourse->set_testapi();
 
         $result = api_helper::set_element_to_release($ocidentifier);

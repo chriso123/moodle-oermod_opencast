@@ -76,9 +76,19 @@ class check_released_videos_task extends scheduled_task {
             $response = $api->opencastapi->eventsApi->getAcl($decompose->value);
             switch ($response['code']) {
                 case 200:
+                    $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, api_helper::METADATATYPE);
+                    $fixdescription = false;
+                    if ($metadata && $metadata['code'] == 200) {
+                        foreach ($metadata['body'] as $field) {
+                            if ($field->id == 'description' && !str_contains($field->value, api_helper::OERPUBLISHED)) {
+                                $fixdescription = true;
+                            }
+                        }
+                    }
                     $found[$snapshot->identifier] = [
                         'snapshot' => $snapshot,
                         'response' => $response,
+                        'fixdescription' => $fixdescription,
                     ];
                     break;
                 case 404:
@@ -118,14 +128,14 @@ class check_released_videos_task extends scheduled_task {
                     $canwrite = true;
                 }
             }
-            if (!$anonymous || $canwrite) {
+            if (!$anonymous || $canwrite || $snapshot['fixdescription']) {
                 $tofix[$snapshot['snapshot']->identifier] = $snapshot;
             }
         }
 
         // Step 4: Set videos to public and remove write permissions for teachers.
         foreach ($tofix as $snapshot) {
-            cli_writeln('Fix permissions for: ' . $snapshot['snapshot']->identifier);
+            cli_writeln('Fix permissions for: ' . $snapshot['snapshot']->identifier . ' (' . $snapshot['snapshot']->title . ')');
             $success = api_helper::set_element_to_release($snapshot['snapshot']->identifier);
             if ($success) {
                 logger::add(

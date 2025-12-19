@@ -38,6 +38,16 @@ use tool_opencast\local\settings_api;
  */
 class api_helper {
     /**
+     * Term to add to the description of the OER released videos.
+     */
+    const OERPUBLISHED = 'oer_published;';
+
+    /**
+     * Metadata type.
+     */
+    const METADATATYPE = 'dublincore/episode';
+
+    /**
      * Cached opencast api object for request.
      *
      * @var api|api_testable|null
@@ -124,8 +134,7 @@ class api_helper {
      * @param string $identifier Identifier of OER element.
      * @param string $moodlelicence Licence as defined in Moodle
      * @return bool
-     * @throws \dml_exception
-     * @throws \moodle_exception
+     * @throws \Exception
      */
     public static function write_to_source(string $identifier, string $moodlelicence): bool {
         $decompose = identifier::decompose($identifier);
@@ -138,26 +147,12 @@ class api_helper {
 
         $licence = self::match_licence('moodle', $moodlelicence);
         $update = [
-            'id' => 'license',
-            'value' => $licence,
+            [
+                'id' => 'license',
+                'value' => $licence,
+            ],
         ];
-        $metadata = json_encode([$update]);
-        $type = 'dublincore/episode';
-
-        $api = self::get_api();
-        $response = $api->opencastapi->eventsApi->updateMetadata($decompose->value, $type, $metadata);
-        $success = self::republish_metadata($api, $decompose->value, $response['code']);
-        if (!$success) {
-            global $DB;
-            $courseid = $DB->get_field('local_oer_elements', 'courseid', ['identifier' => $identifier]);
-            logger::add(
-                $courseid,
-                logger::LOGERROR,
-                'Workflow could not be started, so licence not visible: ' . $identifier,
-                'oermod_opencast'
-            );
-        }
-        return $success;
+        return self::update_metadata($identifier, $update);
     }
 
     /**
@@ -256,6 +251,7 @@ class api_helper {
     /**
      * When an opencast video is released, the video has to be set to be publicly accessible.
      * Also, the video should not be deletable for lecturers.
+     * The description of the video is extended, so that it is visible in opencast, that this is an OER released video.
      *
      * @param string $identifier
      * @return bool
@@ -267,7 +263,15 @@ class api_helper {
         $api = self::get_api();
         $response = $api->opencastapi->eventsApi->getAcl($decompose->value);
         global $DB;
-        $courseid = $DB->get_field('local_oer_snapshot', 'courseid', ['identifier' => $identifier]);
+        $courseid = $DB->get_records(
+            'local_oer_snapshot',
+            ['identifier' => $identifier],
+            'releasenumber DESC',
+            'id, courseid',
+            0,
+            1
+        );
+        $courseid = empty($courseid) ? 0 : reset($courseid)->courseid;
         if (empty($response) || $response['code'] != 200 || $response['reason'] != 'OK') {
             // Webservice call did not succeed.
             // TODO: maybe this should be retried later? Add an adhoc task for this?
@@ -281,8 +285,10 @@ class api_helper {
         // All entries have to be returned, else they will be deleted.
         // Test if anonymous is already in the list, if true, test allow and action.
         // If false, add it to the list.
+        // To reach all _instructor roles across courses, the courseid is replaced with an empty string.
+        // Below is tested if the role contains the string from the setting without the courseid.
         $removewrite = get_config('oermod_opencast', 'rolestoremovewrite');
-        $removewrite = str_replace('{{courseid}}', $courseid, $removewrite);
+        $removewrite = str_replace('{{courseid}}', '', $removewrite);
         $list = explode("\r\n", $removewrite);
         $aclsettings = $response['body'];
         foreach ($aclsettings as $key => $role) {
@@ -296,9 +302,11 @@ class api_helper {
                     break;
                 default:
             }
-            if (in_array($role->role, $list)) {
-                $result = self::remove_write_permission($role, $key, $aclsettings);
-                $update = $update ?: $result;
+            foreach ($list as $item) {
+                if (str_ends_with($role->role, $item)) {
+                    $result = self::remove_write_permission($role, $key, $aclsettings);
+                    $update = $update ?: $result;
+                }
             }
         }
 
@@ -314,8 +322,90 @@ class api_helper {
 
         if ($update) {
             $response = $api->opencastapi->eventsApi->updateAcl($decompose->value, $aclsettings);
-            return self::republish_metadata($api, $decompose->value, $response['code']);
+            if (!$response) {
+                return false;
+            }
+            return self::add_published_info($identifier);
         }
         return true; // No update necessary, all good.
+    }
+
+    /**
+     * Add a value to the description field when the video has been released.
+     *
+     * @param string $identifier
+     * @return bool
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public static function add_published_info(string $identifier): bool {
+        $decompose = identifier::decompose($identifier);
+        $api = self::get_api();
+        $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, self::METADATATYPE);
+
+        if (empty($metadata) || $metadata['code'] != 200) {
+            throw new \Exception('Release error: ' . $identifier . ' Api call getMetadata() did not succeed.');
+        }
+
+        $description = '';
+        foreach ($metadata['body'] as $field) {
+            if ($field->id == 'description') {
+                $description = $field->value;
+            }
+        }
+
+        if (!str_contains($description, self::OERPUBLISHED)) {
+            $description = empty($description) ? self::OERPUBLISHED : self::OERPUBLISHED . ' ' . $description;
+        }
+
+        $update = [
+            [
+                'id' => 'description',
+                'value' => $description,
+            ],
+        ];
+
+        return self::update_metadata($identifier, $update);
+    }
+
+    /**
+     * Update metadata fields and trigger republish_metadata workflow.
+     *
+     * Example metadata:
+     *
+     * [
+     *   [
+     *     'id' => 'license',
+     *     'value' => 'CC-BY',
+     *   ],
+     *   [
+     *     'id' => 'description',
+     *     'value' => 'oer_published; some text',
+     *   ],
+     * ]
+     *
+     * @param string $identifier OER identifier
+     * @param array $metadata Array of metadata. Each entry needs the keys id and value.
+     * @return bool
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    private static function update_metadata(string $identifier, array $metadata): bool {
+        $decompose = identifier::decompose($identifier);
+        $api = self::get_api();
+
+        $response = $api->opencastapi->eventsApi->updateMetadata($decompose->value, self::METADATATYPE, json_encode($metadata));
+        $success = self::republish_metadata($api, $decompose->value, $response['code']);
+        if (!$success) {
+            global $DB;
+            $courseid = $DB->get_field('local_oer_elements', 'courseid', ['identifier' => $identifier]);
+            logger::add(
+                $courseid,
+                logger::LOGERROR,
+                'Workflow could not be started, so licence or oer_published tag not visible: ' . $identifier,
+                'oermod_opencast'
+            );
+        }
+        return $success;
     }
 }
