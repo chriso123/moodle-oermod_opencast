@@ -26,7 +26,6 @@
 namespace oermod_opencast;
 
 use local_oer\identifier;
-use PHPUnit\Runner\Exception;
 use stdClass;
 use tool_opencast\local\api_testable;
 use tool_opencast\local\settings_api;
@@ -111,7 +110,7 @@ class testcourse extends \local_oer\testcourse {
     public function set_json_response_for_testapi(string $filename, string $method): void {
         $path = __DIR__ . "/../fixtures/api_calls/$method/$filename";
         if (!file_exists($path)) {
-            throw new Exception('opencast json file does not exist');
+            throw new \Exception('opencast json file does not exist');
         }
         try {
             $apicall = file_get_contents($path);
@@ -122,8 +121,8 @@ class testcourse extends \local_oer\testcourse {
             $params = !empty($apicall->params) ? json_encode($apicall->params) : '';
             $headers = !empty($apicall->headers) ? json_encode($apicall->headers) : [];
             api_testable::add_json_response($apicall->resource, $method, $status, $body, $params, $headers);
-        } catch (Exception $e) {
-            throw new Exception($e->getMessage());
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
         }
     }
 
