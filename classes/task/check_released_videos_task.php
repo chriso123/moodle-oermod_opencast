@@ -84,18 +84,18 @@ class check_released_videos_task extends scheduled_task {
             switch ($response['code']) {
                 case 200:
                     $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, api_helper::METADATATYPE);
-                    $fixdescription = false;
+                    $fixsubject = false;
                     if ($metadata && $metadata['code'] == 200) {
                         foreach ($metadata['body'] as $field) {
-                            if ($field->id == 'description' && !str_contains($field->value, api_helper::OERPUBLISHED)) {
-                                $fixdescription = true;
+                            if ($field->id == 'subjects' && !in_array(api_helper::OERPUBLISHED, $field->value)) {
+                                $fixsubject = true;
                             }
                         }
                     }
                     $found[$snapshot->identifier] = [
                         'snapshot' => $snapshot,
                         'response' => $response,
-                        'fixdescription' => $fixdescription,
+                        'fixsubject' => $fixsubject,
                     ];
                     break;
                 case 404:
@@ -135,7 +135,7 @@ class check_released_videos_task extends scheduled_task {
                     $canwrite = true;
                 }
             }
-            if (!$anonymous || $canwrite || $snapshot['fixdescription']) {
+            if (!$anonymous || $canwrite || $snapshot['fixsubject']) {
                 $tofix[$snapshot['snapshot']->identifier] = $snapshot;
             }
         }

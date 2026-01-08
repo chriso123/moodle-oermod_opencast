@@ -40,7 +40,7 @@ class api_helper {
     /**
      * Term to add to the description of the OER released videos.
      */
-    const OERPUBLISHED = 'oer_published;';
+    const OERPUBLISHED = 'oer_published';
 
     /**
      * Metadata type.
@@ -320,6 +320,19 @@ class api_helper {
             $aclsettings[] = $acl;
         }
 
+        // If update is false at this point, we need to check the metadata if the published tag is set.
+        // TODO: this is a code duplication. A similar version is used in task.
+        if (!$update) {
+            $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, api_helper::METADATATYPE);
+            if ($metadata && $metadata['code'] == 200) {
+                foreach ($metadata['body'] as $field) {
+                    if ($field->id == 'subjects' && !in_array(self::OERPUBLISHED, $field->value)) {
+                        $update = true;
+                    }
+                }
+            }
+        }
+
         if ($update) {
             $response = $api->opencastapi->eventsApi->updateAcl($decompose->value, $aclsettings);
             if (!$response) {
@@ -331,7 +344,10 @@ class api_helper {
     }
 
     /**
-     * Add a value to the description field when the video has been released.
+     * Add a value to the subject field when the video has been released.
+     *
+     * Subjects is an array in the metadata.
+     * On the opencast admin GUI it will be shown as CSV string with comma as separator.
      *
      * @param string $identifier
      * @return bool
@@ -347,21 +363,21 @@ class api_helper {
             throw new \Exception('Release error: ' . $identifier . ' Api call getMetadata() did not succeed.');
         }
 
-        $description = '';
+        $subjects = [];
         foreach ($metadata['body'] as $field) {
-            if ($field->id == 'description') {
-                $description = $field->value;
+            if ($field->id == 'subjects') {
+                $subjects = $field->value;
             }
         }
 
-        if (!str_contains($description, self::OERPUBLISHED)) {
-            $description = empty($description) ? self::OERPUBLISHED : self::OERPUBLISHED . ' ' . $description;
+        if (!in_array(self::OERPUBLISHED, $subjects)) {
+            $subjects[] = self::OERPUBLISHED;
         }
 
         $update = [
             [
-                'id' => 'description',
-                'value' => $description,
+                'id' => 'subjects',
+                'value' => $subjects,
             ],
         ];
 
