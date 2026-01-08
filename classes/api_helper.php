@@ -323,7 +323,7 @@ class api_helper {
         // If update is false at this point, we need to check the metadata if the published tag is set.
         // TODO: this is a code duplication. A similar version is used in task.
         if (!$update) {
-            $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, api_helper::METADATATYPE);
+            $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, self::METADATATYPE);
             if ($metadata && $metadata['code'] == 200) {
                 foreach ($metadata['body'] as $field) {
                     if ($field->id == 'subjects' && !in_array(self::OERPUBLISHED, $field->value)) {
