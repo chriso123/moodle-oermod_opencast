@@ -60,6 +60,8 @@ export const init = async (released) => { // eslint-disable-line space-before-fu
                 + '_r' + i + '_c' + foundaction.toString());
             const visibility = document.getElementById('opencast-videos-table-' + series[key]
                 + '_r' + i + '_c' + foundvisibility.toString());
+            const checkbox = document.getElementById('opencast-videos-table-' + series[key]
+                + '_r' + i + '_c0');
             const content = cell.innerHTML;
             for (const key in videos) {
                 if (content.includes(videos[key].videoid) && foundaction > -1) {
@@ -68,6 +70,10 @@ export const init = async (released) => { // eslint-disable-line space-before-fu
                 }
                 if (content.includes(videos[key].videoid) && foundvisibility > -1) {
                     visibility.innerHTML = '-';
+                }
+                if (content.includes(videos[key].videoid)) {
+                    // Just remove the whole checkbox, so the select all cannot reach it anymore.
+                    checkbox.innerHTML = '';
                 }
             }
         }
