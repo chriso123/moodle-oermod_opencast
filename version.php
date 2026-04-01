@@ -25,7 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2025112500;
+$plugin->version = 2026040100;
 $plugin->requires = 2024100707;
 $plugin->component = 'oermod_opencast';
 $plugin->release = 'v1.0.4';

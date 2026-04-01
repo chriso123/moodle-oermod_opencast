@@ -53,12 +53,42 @@ class hook_callbacks {
                 $identifier = \local_oer\identifier::decompose($record->identifier);
                 if ($identifier->platform == 'opencast' && $identifier->type == 'video') {
                     $data['videos'][$record->identifier] = [
-                            'videoid' => $identifier->value,
-                            'title' => $record->title,
+                        'videoid' => $identifier->value,
+                        'title' => $record->title,
                     ];
                 }
             }
             $PAGE->requires->js_call_amd('oermod_opencast/preventdelete-lazy', 'init', ['released' => $data]);
+        }
+    }
+
+    /**
+     * Add ACL parameters to the opencast studio link
+     *
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function extend_opencast_studio_url_parameters() {
+        global $PAGE;
+        if (
+            $PAGE->has_set_url() &&
+            (preg_match('/\/blocks\/opencast\/index.php/', $PAGE->url->out()) ||
+                preg_match('/\/course\/view.php/', $PAGE->url->out())) &&
+            get_config('block_opencast', 'enable_opencast_studio_link_1') == 1
+        ) {
+            $courseid = $PAGE->course->id;
+            $roles = json_decode(get_config('block_opencast', 'roles_1'));
+            $acl = [];
+            foreach ($roles as $role) {
+                if (str_contains($role->actions, 'write')) {
+                    $rolename = str_replace('[COURSEID]', $courseid, $role->rolename);
+                    $acl[$rolename] = ['read', 'write'];
+                }
+            }
+            $params = [
+                'upload.acl' => json_encode($acl),
+            ];
+            $PAGE->requires->js_call_amd('oermod_opencast/extend_opencast_studio-lazy', 'init', [$params]);
         }
     }
 }

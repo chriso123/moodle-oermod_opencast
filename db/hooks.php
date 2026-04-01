@@ -31,4 +31,9 @@ $callbacks = [
                 'callback' => [\oermod_opencast\hook_callbacks::class, 'inject_javascript_to_block_opencast'],
                 'priority' => 100,
         ],
+        [
+        'hook' => core\hook\output\before_footer_html_generation::class,
+        'callback' => [\oermod_opencast\hook_callbacks::class, 'extend_opencast_studio_url_parameters'],
+        'priority' => 99,
+        ],
 ];
