@@ -93,7 +93,7 @@ final class message_test extends \advanced_testcase {
 
         // Case 1: empty missing and error arrays.
         $sink = $this->redirectEmails();
-        \oermod_opencast\message::send_missingvideos([], [], []);
+        \oermod_opencast\message::send_missingvideos([], [], [], []);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(0, $messages, 'Empty arrays, so no messages send.');
@@ -109,7 +109,7 @@ final class message_test extends \advanced_testcase {
                 'snapshot' => $video,
             ],
         ];
-        \oermod_opencast\message::send_missingvideos($missing, [], []);
+        \oermod_opencast\message::send_missingvideos([], $missing, [], []);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
@@ -117,7 +117,8 @@ final class message_test extends \advanced_testcase {
         $this->assertStringContainsString(get_string('message:missingvideos', 'oermod_opencast'), $messages[0]->subject);
         $message = $messages[0]->body;
         $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
-        $this->assertStringContainsString(get_string('message:missingvideos_body', 'oermod_opencast'), $message);
+        $compare = strtoupper(get_string('message:missingvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
+        $this->assertStringContainsString($compare, $message);
         $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
@@ -138,13 +139,14 @@ final class message_test extends \advanced_testcase {
                 ],
             ],
         ];
-        \oermod_opencast\message::send_missingvideos([], $errors, []);
+        \oermod_opencast\message::send_missingvideos([], [], $errors, []);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
         $message = $messages[0]->body;
         $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
-        $this->assertStringContainsString(get_string('message:errors', 'oermod_opencast'), $message);
+        $compare = strtoupper(get_string('message:errors', 'oermod_opencast')); // H4 in text mail uppercase.
+        $this->assertStringContainsString($compare, $message);
         $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
@@ -156,14 +158,15 @@ final class message_test extends \advanced_testcase {
         // Case 4: failed array has an entry.
         $sink = $this->redirectEmails();
 
-        \oermod_opencast\message::send_missingvideos([], [], $missing);
+        \oermod_opencast\message::send_missingvideos([], [], [], $missing);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
         $this->assertStringContainsString('admin', $messages[0]->to);
         $message = $messages[0]->body;
         $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
-        $this->assertStringContainsString(get_string('message:failedvideos_body', 'oermod_opencast'), $message);
+        $compare = strtoupper(get_string('message:failedvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
+        $this->assertStringContainsString($compare, $message);
         $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
@@ -175,7 +178,7 @@ final class message_test extends \advanced_testcase {
 
         // Case 4: all three arrays have entries.
         $sink = $this->redirectEmails();
-        \oermod_opencast\message::send_missingvideos($missing, $errors, $missing);
+        \oermod_opencast\message::send_missingvideos([], $missing, $errors, $missing);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
@@ -183,9 +186,12 @@ final class message_test extends \advanced_testcase {
         $this->assertStringContainsString(get_string('message:missingvideos', 'oermod_opencast'), $messages[0]->subject);
         $message = $messages[0]->body;
         $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
-        $this->assertStringContainsString(get_string('message:errors', 'oermod_opencast'), $message);
-        $this->assertStringContainsString(get_string('message:missingvideos_body', 'oermod_opencast'), $message);
-        $this->assertStringContainsString(get_string('message:failedvideos_body', 'oermod_opencast'), $message);
+        $compare = strtoupper(get_string('message:errors', 'oermod_opencast')); // H4 in text mail uppercase.
+        $this->assertStringContainsString($compare, $message);
+        $compare = strtoupper(get_string('message:missingvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
+        $this->assertStringContainsString($compare, $message);
+        $compare = strtoupper(get_string('message:failedvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
+        $this->assertStringContainsString($compare, $message);
         $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
@@ -196,14 +202,26 @@ final class message_test extends \advanced_testcase {
         assign_capability('oermod/opencast:missingvideos', CAP_ALLOW, $manager->id, $context);
         $this->assertTrue(has_capability('oermod/opencast:missingvideos', $context, $user4));
         $sink = $this->redirectEmails();
-        \oermod_opencast\message::send_missingvideos($missing, $errors, $missing);
+        \oermod_opencast\message::send_missingvideos([], $missing, $errors, $missing);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(2, $messages);
         $this->assertStringContainsString('admin', $messages[0]->to);
         $this->assertEquals($user4->email, $messages[1]->to);
 
+        // Case 6: Email setting is set.
+        $email = 'redirect@example.com';
+        set_config('notificationemail', $email, 'oermod_opencast');
+        $sink = $this->redirectEmails();
+        \oermod_opencast\message::send_missingvideos([], $missing, $errors, $missing);
+        $messages = $sink->get_messages();
+        $sink->close();
+        $this->assertCount(3, $messages);
+        $this->assertStringContainsString('admin', $messages[0]->to);
+        $this->assertEquals($user4->email, $messages[1]->to);
+        $this->assertEquals($email, $messages[2]->to);
+
         $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
-        $this->assertCount(9, $logs);
+        $this->assertCount(12, $logs);
     }
 }

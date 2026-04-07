@@ -320,7 +320,6 @@ class api_helper {
             if (!$response) {
                 return false;
             }
-            return self::update_metadata($identifier, $update);
         }
         return true; // No update necessary, all good.
     }

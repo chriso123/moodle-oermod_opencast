@@ -86,7 +86,7 @@ class message {
             logger::add(
                 0,
                 logger::LOGERROR,
-                count($missing) . ' videos failed to be set to release. Notification has been sent to admins.',
+                count($failed) . ' videos failed to be set to release. Notification has been sent to admins.',
                 'oermod_opencast'
             );
             foreach ($failed as $video) {
@@ -153,23 +153,32 @@ class message {
             $message->userto = $user;
             message_send($message);
         }
+        self::send_message_to_support_email($message);
     }
 
     /**
-     * Load main admin and overwrite email with set email.
-     *
-     * If no email is set in oermod_opencast|notificationemail, send mail to main admin.
+     * Send mail to main admin and users with missingvideos capability.
      *
      * @return array
      * @throws \dml_exception
      */
     private static function get_users(): array {
-        $email = get_config('oermod_opencast', 'notificationemail');
-        $admin = get_admin();
-        if (!empty($email)) {
+        return array_merge([get_admin()], get_users_by_capability(context_system::instance(), 'oermod/opencast:missingvideos'));
+    }
+
+    /**
+     * Send message to email set in oermod_opencast|notificationemail setting.
+     *
+     * @param \core\message\message $message
+     * @return void
+     * @throws \dml_exception
+     */
+    private static function send_message_to_support_email(\core\message\message $message): void {
+        if ($email = get_config('oermod_opencast', 'notificationemail')) {
+            $admin = get_admin();
             $admin->email = $email;
+            email_to_user($admin, $admin, $message->subject, $message->fullmessage, $message->fullmessagehtml);
         }
-        return array_merge([$admin], get_users_by_capability(context_system::instance(), 'oermod/opencast:missingvideos'));
     }
 
     /**

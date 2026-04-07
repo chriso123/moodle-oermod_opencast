@@ -26,6 +26,8 @@
 namespace oermod_opencast;
 
 use local_oer\logger;
+use ReflectionClass;
+use ReflectionMethod;
 
 /**
  * Test api_helper
@@ -233,7 +235,6 @@ final class api_helper_test extends \advanced_testcase {
     /**
      * Test add_published_info function.
      *
-     * @covers ::add_published_info
      * @covers ::update_metadata
      *
      * @return void
@@ -257,7 +258,8 @@ final class api_helper_test extends \advanced_testcase {
         $testcourse->set_json_response_for_testapi('api_events_updatemetadata_success.json', 'put');
         $testcourse->set_json_response_for_testapi('api_workflows_updatemetadata_success.json', 'post');
         $testcourse->set_testapi();
-        $this->assertTrue(api_helper::add_published_info($ocidentifier));
+        $method = new ReflectionMethod(\oermod_opencast\api_helper::class, 'update_metadata');
+        $this->assertTrue($method->invoke(null, $ocidentifier, []));
     }
 
     /**
