@@ -83,19 +83,9 @@ class check_released_videos_task extends scheduled_task {
             $response = $api->opencastapi->eventsApi->getAcl($decompose->value);
             switch ($response['code']) {
                 case 200:
-                    $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, api_helper::METADATATYPE);
-                    $fixsubject = false;
-                    if ($metadata && $metadata['code'] == 200) {
-                        foreach ($metadata['body'] as $field) {
-                            if ($field->id == 'subjects' && !in_array(api_helper::OERPUBLISHED, $field->value)) {
-                                $fixsubject = true;
-                            }
-                        }
-                    }
                     $found[$snapshot->identifier] = [
                         'snapshot' => $snapshot,
                         'response' => $response,
-                        'fixsubject' => $fixsubject,
                     ];
                     break;
                 case 404:
@@ -111,11 +101,6 @@ class check_released_videos_task extends scheduled_task {
                     ];
             }
         }
-        cli_writeln('------------');
-        cli_writeln(count($found) . ' Videos will be checked for their permissions.');
-        cli_writeln((count($errors) + count($notfound)) . ' Videos are missing or have errors.' .
-            ((count($errors) + count($notfound)) > 0 ? ' Emails will be sent if necessary.' : ''));
-        cli_writeln('------------');
 
         // Step 3: Check if videos are still publicly available and teachers cannot delete them.
         $tofix = [];
@@ -135,29 +120,18 @@ class check_released_videos_task extends scheduled_task {
                     $canwrite = true;
                 }
             }
-            if (!$anonymous || $canwrite || $snapshot['fixsubject']) {
+            if (!$anonymous || $canwrite) {
                 $tofix[$snapshot['snapshot']->identifier] = $snapshot;
             }
         }
 
-        // Step 4: Set videos to public and remove write permissions for teachers.
-        foreach ($tofix as $snapshot) {
-            cli_writeln('Fix permissions for: ' . $snapshot['snapshot']->identifier . ' (' . $snapshot['snapshot']->title . ')');
-            $success = api_helper::set_element_to_release($snapshot['snapshot']->identifier);
-            if ($success) {
-                logger::add(
-                    $snapshot['snapshot']->courseid,
-                    $success ? logger::LOGSUCCESS : logger::LOGERROR,
-                    $success ? 'Fixed permissions for: ' . $snapshot['snapshot']->identifier
-                        : 'Error fixing permissions for: ' . $snapshot['snapshot']->identifier
-                );
-            } else {
-                // Logger already triggered in set_element_to_release.
-                $failed[$snapshot['snapshot']->identifier] = $snapshot;
-            }
-        }
+        cli_writeln('------------');
+        cli_writeln(count($tofix) . ' Videos have wrong ACL settings and need to be fixed.');
+        cli_writeln((count($errors) + count($notfound)) . ' Videos are missing or have errors.' .
+            ((count($errors) + count($notfound)) > 0 ? ' Emails will be sent.' : ''));
+        cli_writeln('------------');
 
         // Step 5: If there are any videos missing send notifications.
-        message::send_missingvideos($notfound, $errors, $failed);
+        message::send_missingvideos($tofix, $notfound, $errors, $failed);
     }
 }

@@ -29,10 +29,10 @@ $tasks = [
         [
                 'classname' => 'oermod_opencast\task\check_released_videos_task',
                 'blocking' => 0,
-                'minute' => '22',
-                'hour' => '23',
+                'minute' => '0',
+                'hour' => '6',
                 'day' => '*',
-                'dayofweek' => '1,4',
+                'dayofweek' => '1',
                 'month' => '*',
                 'disabled' => 0,
         ],

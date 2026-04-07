@@ -38,4 +38,11 @@ if ($hassiteconfig) {
         new lang_string('rolestoremovewrite_description', 'oermod_opencast'),
         "{{courseid}}_Instructor\r\nROLE_GROUP_MH_DEFAULT_ORG_EXTERNAL_APPLICATIONS"
     ));
+    $settings->add(new admin_setting_configtext(
+        'oermod_opencast/notificationemail',
+        new lang_string('notify_on_error', 'oermod_opencast'),
+        new lang_string('notify_on_error_description', 'oermod_opencast'),
+        '',
+        PARAM_EMAIL,
+    ));
 }

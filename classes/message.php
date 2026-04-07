@@ -33,18 +33,19 @@ use local_oer\logger;
  */
 class message {
     /**
-     * Notify administrators (or other privileged users) that some Opencast videos are missing.
+     * Notify set email or main admin that some OER released Opencast videos have errors.
      *
      * This requires manual action to clean up or restore the videos in Opencast.
      *
+     * @param array $tofix array of videos with wrong ACL settings
      * @param array $missing array of missing videos
      * @param array $errors array of videos with other errors
      * @param array $failed array of videos that could not be released
      * @return void
      * @throws \dml_exception
      */
-    public static function send_missingvideos(array $missing, array $errors, array $failed): void {
-        if (empty($missing) && empty($errors) && empty($failed)) {
+    public static function send_missingvideos(array $tofix, array $missing, array $errors, array $failed): void {
+        if (empty($tofix) && empty($missing) && empty($errors) && empty($failed)) {
             return;
         }
         $message = new \core\message\message();
@@ -54,8 +55,33 @@ class message {
         $message->subject = get_string('message:missingvideos', 'oermod_opencast');
         $message->fullmessageformat = FORMAT_HTML;
         $fullmessage = '';
+        if (!empty($tofix)) {
+            $roles = get_config('oermod_opencast', 'rolestoremovewrite');
+            $roles = explode("\r\n", $roles);
+            $roles = implode(', ', $roles);
+            $fullmessage .= '<h3>' .
+                get_string('message:tofixvideos_body', 'oermod_opencast') .
+                '</h3><p>' .
+                get_string('message:tofixvideos_body_extension', 'oermod_opencast', ['roles' => $roles]) .
+                '</p>';
+            $filelisthtml = '<p>';
+            logger::add(
+                0,
+                logger::LOGERROR,
+                count($tofix) . ' videos have wrong ACL settings. Notification has been sent to admins.',
+                'oermod_opencast'
+            );
+            foreach ($tofix as $video) {
+                $filelisthtml .= self::get_video_for_message(
+                    $video['snapshot']->courseid,
+                    $video['snapshot']->title,
+                    $video['snapshot']->identifier
+                );
+            }
+            $fullmessage .= $filelisthtml . '</p>';
+        }
         if (!empty($failed)) {
-            $fullmessage .= '<p>' . get_string('message:failedvideos_body', 'oermod_opencast') . '</p>';
+            $fullmessage .= '<h3>' . get_string('message:failedvideos_body', 'oermod_opencast') . '</h3>';
             $filelisthtml = '<p>';
             logger::add(
                 0,
@@ -73,7 +99,7 @@ class message {
             $fullmessage .= $filelisthtml . '</p>';
         }
         if (!empty($missing)) {
-            $fullmessage .= '<p>' . get_string('message:missingvideos_body', 'oermod_opencast') . '</p>';
+            $fullmessage .= '<h3>' . get_string('message:missingvideos_body', 'oermod_opencast') . '</h3>';
             $filelisthtml = '<p>';
             logger::add(
                 0,
@@ -91,7 +117,7 @@ class message {
             $fullmessage .= $filelisthtml . '</p>';
         }
         if (!empty($errors)) {
-            $fullmessage .= '<p>' . get_string('message:errors', 'oermod_opencast') . '</p>';
+            $fullmessage .= '<h3>' . get_string('message:errors', 'oermod_opencast') . '</h3>';
             $filelisthtml = '<p>';
             logger::add(
                 0,
@@ -130,12 +156,20 @@ class message {
     }
 
     /**
-     * Load all users this message can be sent to.
+     * Load main admin and overwrite email with set email.
+     *
+     * If no email is set in oermod_opencast|notificationemail, send mail to main admin.
      *
      * @return array
+     * @throws \dml_exception
      */
     private static function get_users(): array {
-        return array_merge(get_admins(), get_users_by_capability(context_system::instance(), 'oermod/opencast:missingvideos'));
+        $email = get_config('oermod_opencast', 'notificationemail');
+        $admin = get_admin();
+        if (!empty($email)) {
+            $admin->email = $email;
+        }
+        return array_merge([$admin], get_users_by_capability(context_system::instance(), 'oermod/opencast:missingvideos'));
     }
 
     /**

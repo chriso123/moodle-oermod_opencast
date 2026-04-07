@@ -38,11 +38,6 @@ use tool_opencast\local\settings_api;
  */
 class api_helper {
     /**
-     * Term to add to the description of the OER released videos.
-     */
-    const OERPUBLISHED = 'oer_published';
-
-    /**
      * Metadata type.
      */
     const METADATATYPE = 'dublincore/episode';
@@ -320,68 +315,14 @@ class api_helper {
             $aclsettings[] = $acl;
         }
 
-        // If update is false at this point, we need to check the metadata if the published tag is set.
-        // TODO: this is a code duplication. A similar version is used in task.
-        if (!$update) {
-            $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, self::METADATATYPE);
-            if ($metadata && $metadata['code'] == 200) {
-                foreach ($metadata['body'] as $field) {
-                    if ($field->id == 'subjects' && !in_array(self::OERPUBLISHED, $field->value)) {
-                        $update = true;
-                    }
-                }
-            }
-        }
-
         if ($update) {
             $response = $api->opencastapi->eventsApi->updateAcl($decompose->value, $aclsettings);
             if (!$response) {
                 return false;
             }
-            return self::add_published_info($identifier);
+            return self::update_metadata($identifier, $update);
         }
         return true; // No update necessary, all good.
-    }
-
-    /**
-     * Add a value to the subject field when the video has been released.
-     *
-     * Subjects is an array in the metadata.
-     * On the opencast admin GUI it will be shown as CSV string with comma as separator.
-     *
-     * @param string $identifier
-     * @return bool
-     * @throws \dml_exception
-     * @throws \moodle_exception
-     */
-    public static function add_published_info(string $identifier): bool {
-        $decompose = identifier::decompose($identifier);
-        $api = self::get_api();
-        $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, self::METADATATYPE);
-
-        if (empty($metadata) || $metadata['code'] != 200) {
-            throw new \Exception('Release error: ' . $identifier . ' Api call getMetadata() did not succeed.');
-        }
-
-        $subjects = [];
-        foreach ($metadata['body'] as $field) {
-            if ($field->id == 'subjects') {
-                $subjects = $field->value;
-            }
-        }
-
-        if (!in_array(self::OERPUBLISHED, $subjects)) {
-            $subjects[] = self::OERPUBLISHED;
-        }
-
-        $update = [
-            [
-                'id' => 'subjects',
-                'value' => $subjects,
-            ],
-        ];
-
-        return self::update_metadata($identifier, $update);
     }
 
     /**

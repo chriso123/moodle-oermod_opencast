@@ -25,7 +25,6 @@
 
 namespace oermod_opencast;
 
-use local_oer\logger;
 use oermod_opencast\task\check_released_videos_task;
 
 /**
@@ -104,21 +103,21 @@ final class check_released_videos_task_test extends \advanced_testcase {
         $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'put');
         $testcourse->set_testapi();
 
-        $this->run_execute($course->id);
+        $this->run_execute();
 
         $testcourse->reset_json_response();
         api_helper::reset_api();
         $testcourse->set_json_response_for_testapi('api_events_acl_fail.json', 'get');
         $testcourse->set_testapi();
 
-        $this->run_execute($course->id);
+        $this->run_execute();
 
         $testcourse->reset_json_response();
         api_helper::reset_api();
         $testcourse->set_json_response_for_testapi('api_events_acl_success_w_anon.json', 'get');
         $testcourse->set_testapi();
 
-        $this->run_execute($course->id);
+        $this->run_execute();
 
         $testcourse->reset_json_response();
         api_helper::reset_api();
@@ -129,26 +128,22 @@ final class check_released_videos_task_test extends \advanced_testcase {
         $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'put');
         $testcourse->set_testapi();
 
-        $this->run_execute($course->id);
+        $this->run_execute();
     }
 
     /**
      * This function is used multiple times in the test_execute method.
      *
-     * @param int $courseid
      * @return void
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    private function run_execute(int $courseid): void {
+    private function run_execute(): void {
         $sink = $this->redirectEmails();
         $task = new check_released_videos_task();
         $task->execute();
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
-        global $DB;
-        $logs = $DB->get_records('local_oer_log', ['courseid' => $courseid, 'type' => logger::LOGSUCCESS]);
-        $this->assertCount(1, $logs, 'One success log, does not change through different calls for this test.');
     }
 }
