@@ -105,6 +105,9 @@ class check_released_videos_task extends scheduled_task {
         // Step 3: Check if videos are still publicly available and teachers cannot delete them.
         $tofix = [];
         $wronglicence = [];
+        $roles = get_config('oermod_opencast', 'rolestoremovewrite');
+        $roles = str_replace('{{courseid}}', '', $roles); // Remove placeholder for comparison.
+        $roles = explode("\r\n", $roles);
         foreach ($found as $snapshot) {
             $anonymous = false;
             $canwrite = false;
@@ -116,12 +119,14 @@ class check_released_videos_task extends scheduled_task {
                     $anonymous = true;
                 }
                 // When a video is released, all courses where the video is linked should lose writing capability.
-                // So we check for every $courseid_instructor that is set.
-                if (
-                    str_contains($permission->role, '_Instructor') && $permission->action == 'write' &&
-                    $permission->allow
-                ) {
-                    $canwrite = true;
+                // So we check for every role from the oermod_opencast | rolestoremovewrite setting.
+                foreach ($roles as $role) {
+                    if (str_contains($permission->role, $role) &&
+                        $permission->action == 'write' &&
+                        $permission->allow
+                    ) {
+                        $canwrite = true;
+                    }
                 }
             }
             if (!$anonymous || $canwrite) {
