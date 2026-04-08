@@ -109,7 +109,7 @@ final class message_test extends \advanced_testcase {
                 'snapshot' => $video,
             ],
         ];
-        \oermod_opencast\message::send_missingvideos([], $missing, [], []);
+        \oermod_opencast\message::send_missingvideos([], [], $missing, []);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
@@ -119,13 +119,17 @@ final class message_test extends \advanced_testcase {
         $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
         $compare = strtoupper(get_string('message:missingvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
         $this->assertStringContainsString($compare, $message);
-        $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
+        $this->assertStringContainsString($course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
         // The messages have courseid 0, as they do not belong to a specific course.
         $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
         $this->assertCount(1, $logs);
-        $this->assertEquals('1 missing videos. Notification has been sent to admins.', $logs[array_key_first($logs)]->message);
+        $this->assertEquals(
+            'Validate Task: 1 errors in videos found. ' .
+            'Message sent to the main administrator, authorised users and the set email address.',
+            $logs[array_key_first($logs)]->message
+        );
         $this->assertEquals('oermod_opencast', $logs[array_key_first($logs)]->component);
 
         // Case 3: error array has an entry.
@@ -139,7 +143,7 @@ final class message_test extends \advanced_testcase {
                 ],
             ],
         ];
-        \oermod_opencast\message::send_missingvideos([], [], $errors, []);
+        \oermod_opencast\message::send_missingvideos([], [], [], $errors);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
@@ -147,38 +151,48 @@ final class message_test extends \advanced_testcase {
         $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
         $compare = strtoupper(get_string('message:errors', 'oermod_opencast')); // H4 in text mail uppercase.
         $this->assertStringContainsString($compare, $message);
-        $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
+        $this->assertStringContainsString($course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
         $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
         $this->assertCount(2, $logs, 'missing and error');
-        $this->assertEquals('1 errors with videos. Notification has been sent to admins.', $logs[array_key_last($logs)]->message);
+        $this->assertEquals(
+            'Validate Task: 1 errors in videos found. ' .
+            'Message sent to the main administrator, authorised users and the set email address.',
+            $logs[array_key_first($logs)]->message
+        );
         $this->assertEquals('oermod_opencast', $logs[array_key_last($logs)]->component);
 
-        // Case 4: failed array has an entry.
+        // Case 4: tofix and wrong licence array has an entry.
         $sink = $this->redirectEmails();
 
-        \oermod_opencast\message::send_missingvideos([], [], [], $missing);
+        \oermod_opencast\message::send_missingvideos($missing, $missing, [], []);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
         $this->assertStringContainsString('admin', $messages[0]->to);
         $message = $messages[0]->body;
         $message = str_replace("\r\n", ' ', $message); // Remove linebreaks to compare get_string.
-        $compare = strtoupper(get_string('message:failedvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
+        $compare = strtoupper(get_string('message:tofixvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
         $this->assertStringContainsString($compare, $message);
-        $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
+        $compare = strtoupper(get_string('message:wronglicencevideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
+        $this->assertStringContainsString($compare, $message);
+        $this->assertStringContainsString($course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
         // The messages have courseid 0, as they do not belong to a specific course.
         $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
         $this->assertCount(3, $logs, 'Failed, Errors and missing.');
-        $this->assertEquals('1 missing videos. Notification has been sent to admins.', $logs[array_key_first($logs)]->message);
+        $this->assertEquals(
+            'Validate Task: 1 errors in videos found. ' .
+            'Message sent to the main administrator, authorised users and the set email address.',
+            $logs[array_key_first($logs)]->message
+        );
         $this->assertEquals('oermod_opencast', $logs[array_key_first($logs)]->component);
 
-        // Case 4: all three arrays have entries.
+        // Case 4: all four arrays have entries.
         $sink = $this->redirectEmails();
-        \oermod_opencast\message::send_missingvideos([], $missing, $errors, $missing);
+        \oermod_opencast\message::send_missingvideos($missing, $missing, $errors, $missing);
         $messages = $sink->get_messages();
         $sink->close();
         $this->assertCount(1, $messages);
@@ -190,13 +204,15 @@ final class message_test extends \advanced_testcase {
         $this->assertStringContainsString($compare, $message);
         $compare = strtoupper(get_string('message:missingvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
         $this->assertStringContainsString($compare, $message);
-        $compare = strtoupper(get_string('message:failedvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
+        $compare = strtoupper(get_string('message:wronglicencevideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
         $this->assertStringContainsString($compare, $message);
-        $this->assertStringContainsString('* CourseID: ' . $course->id, $message);
+        $compare = strtoupper(get_string('message:tofixvideos_body', 'oermod_opencast')); // H4 in text mail uppercase.
+        $this->assertStringContainsString($compare, $message);
+        $this->assertStringContainsString($course->id, $message);
         $this->assertStringContainsString($video->identifier, $message);
 
         $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
-        $this->assertCount(6, $logs);
+        $this->assertCount(4, $logs);
 
         // Case 5: Manager also gets message.
         assign_capability('oermod/opencast:missingvideos', CAP_ALLOW, $manager->id, $context);
@@ -222,6 +238,6 @@ final class message_test extends \advanced_testcase {
         $this->assertEquals($email, $messages[2]->to);
 
         $logs = $DB->get_records('local_oer_log', ['courseid' => 0, 'type' => logger::LOGERROR]);
-        $this->assertCount(12, $logs);
+        $this->assertCount(6, $logs);
     }
 }

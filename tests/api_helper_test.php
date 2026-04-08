@@ -238,6 +238,7 @@ final class api_helper_test extends \advanced_testcase {
      * @covers ::update_metadata
      *
      * @return void
+     * @throws \ReflectionException
      * @throws \dml_exception
      * @throws \moodle_exception
      */
@@ -435,5 +436,45 @@ final class api_helper_test extends \advanced_testcase {
 
         $result = api_helper::set_element_to_release($ocidentifier);
         $this->assertTrue($result, 'No update necessary in this case.');
+    }
+
+    /**
+     * Test get moodle licence of video method.
+     *
+     * @covers ::get_moodle_licence_of_video
+     *
+     * @return void
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function test_get_moodle_licence_of_video(): void {
+        $testcourse = new testcourse();
+        $ocidentifier = $testcourse->generate_opencast_identifier('abcd-abcd-abcd-abcd');
+
+        // 1. Test if null when api does not deliver anything.
+        $licence = api_helper::get_moodle_licence_of_video($ocidentifier);
+        $this->assertNull($licence);
+
+        // 2. Licence is unknown.
+        $testcourse->set_json_response_for_testapi('api_events_metadata.json', 'get');
+        $testcourse->set_testapi();
+        $licence = api_helper::get_moodle_licence_of_video($ocidentifier);
+        $this->assertEquals('unknown', $licence);
+
+        // 3. Licence is a cc licence.
+        $testcourse->reset_json_response();
+        api_helper::reset_api();
+        $testcourse->set_json_response_for_testapi('api_events_metadata_licence_cc.json', 'get');
+        $testcourse->set_testapi();
+        $licence = api_helper::get_moodle_licence_of_video($ocidentifier);
+        $this->assertEquals('cc-4.0', $licence);// 3. Licence is a cc licence.
+
+        // 4. Licence is all rights reserved.
+        $testcourse->reset_json_response();
+        api_helper::reset_api();
+        $testcourse->set_json_response_for_testapi('api_events_metadata_licence_allrightsreserved.json', 'get');
+        $testcourse->set_testapi();
+        $licence = api_helper::get_moodle_licence_of_video($ocidentifier);
+        $this->assertEquals('allrightsreserved', $licence);
     }
 }

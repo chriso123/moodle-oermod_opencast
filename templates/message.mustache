@@ -1,0 +1,79 @@
+{{!
+This file is part of Moodle - http://moodle.org/
+
+Moodle is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Moodle is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template oermod_opencast/message
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * Various data about mappings
+
+    Example context (json):
+    {
+        "tofix": [
+            {
+                "courseid": "2",
+                "title": "tofixcourse",
+                "identifier": "oer:opencast@localhost:abcdefg"
+            }
+        ]
+    }
+  }}
+
+{{#str}} message:top, oermod_opencast {{/str}}
+<p>{{#str}} course {{/str}} | {{#str}} title, local_oer {{/str}} | {{#str}} identifier, block_opencast {{/str}}</p>
+<h3>{{#str}} message:tofixvideos_body, oermod_opencast {{/str}}</h3>
+<p>{{#str}} message:tofixvideos_body_extension, oermod_opencast, { "roles": {{#quote}} {{roles}} {{/quote}} }{{/str}}</p>
+<ul>
+    {{#tofix}}
+        <li>{{courseid}} | {{title}} | {{identifier}}</li>
+    {{/tofix}}
+    {{^tofix}}
+        <li>-</li>
+    {{/tofix}}
+</ul>
+<h3>{{#str}} message:wronglicencevideos_body, oermod_opencast {{/str}}</h3>
+<ul>
+    {{#wronglicence}}
+        <li>{{courseid}} | {{title}} | {{identifier}}</li>
+    {{/wronglicence}}
+    {{^wronglicence}}
+        <li>-</li>
+    {{/wronglicence}}
+</ul>
+<h3>{{#str}} message:missingvideos_body, oermod_opencast {{/str}}</h3>
+<ul>
+    {{#missing}}
+        <li>{{courseid}} | {{title}} | {{identifier}}</li>
+    {{/missing}}
+    {{^missing}}
+        <li>-</li>
+    {{/missing}}
+</ul>
+<h3>{{#str}} message:errors, oermod_opencast {{/str}}</h3>
+<ul>
+    {{#errors}}
+        <li>{{courseid}} | {{title}} | {{identifier}} | {{code}} | {{reason}}</li>
+    {{/errors}}
+    {{^errors}}
+        <li>-</li>
+    {{/errors}}
+</ul>

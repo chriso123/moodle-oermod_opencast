@@ -73,7 +73,6 @@ class check_released_videos_task extends scheduled_task {
         $notfound = []; // 404 Error occured.
         $found = []; // Found video in webservice response.
         $errors = []; // Any other error than 404.
-        $failed = []; // Found the video, but the update failed.
 
         $api = api_helper::get_api();
 
@@ -86,6 +85,7 @@ class check_released_videos_task extends scheduled_task {
                     $found[$snapshot->identifier] = [
                         'snapshot' => $snapshot,
                         'response' => $response,
+                        'licence' => api_helper::get_moodle_licence_of_video($snapshot->identifier),
                     ];
                     break;
                 case 404:
@@ -104,9 +104,13 @@ class check_released_videos_task extends scheduled_task {
 
         // Step 3: Check if videos are still publicly available and teachers cannot delete them.
         $tofix = [];
+        $wronglicence = [];
         foreach ($found as $snapshot) {
             $anonymous = false;
             $canwrite = false;
+            if (empty($snapshot['licence']) || (!str_contains($snapshot['licence'], 'cc') && $snapshot['licence'] !== 'public')) {
+                $wronglicence[$snapshot['snapshot']->identifier] = $snapshot;
+            }
             foreach ($snapshot['response']['body'] as $permission) {
                 if ($permission->role == 'ROLE_ANONYMOUS') {
                     $anonymous = true;
@@ -126,12 +130,14 @@ class check_released_videos_task extends scheduled_task {
         }
 
         cli_writeln('------------');
-        cli_writeln(count($tofix) . ' Videos have wrong ACL settings and need to be fixed.');
-        cli_writeln((count($errors) + count($notfound)) . ' Videos are missing or have errors.' .
-            ((count($errors) + count($notfound)) > 0 ? ' Emails will be sent.' : ''));
+        cli_writeln(count($tofix) . ' Videos have wrong ACL settings.');
+        cli_writeln(count($wronglicence) . ' Videos have wrong licence set.');
+        cli_writeln(count($notfound) . ' Videos are missing.');
+        cli_writeln(count($errors) . ' Videos have other errors.');
+        cli_writeln('Emails will be sent.');
         cli_writeln('------------');
 
         // Step 5: If there are any videos missing send notifications.
-        message::send_missingvideos($tofix, $notfound, $errors, $failed);
+        message::send_missingvideos($tofix, $wronglicence, $notfound, $errors);
     }
 }

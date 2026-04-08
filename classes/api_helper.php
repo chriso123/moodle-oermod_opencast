@@ -124,6 +124,34 @@ class api_helper {
     }
 
     /**
+     * Load the licence of a video from opencast and map it to the according Moodle licence.
+     *
+     * @param string $identifier
+     * @return string|null
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public static function get_moodle_licence_of_video(string $identifier): null|string {
+        $decompose = identifier::decompose($identifier);
+        $api = self::get_api();
+        $metadata = $api->opencastapi->eventsApi->getMetadata($decompose->value, self::METADATATYPE);
+        if (empty($metadata) || $metadata['code'] != 200) {
+            return null; // Api call did not succeed.
+        }
+
+        $licence = null;
+        foreach ($metadata['body'] as $field) {
+            if ($field->id == 'license') {
+                $licence = $field;
+            }
+        }
+        if (empty($licence)) {
+            return self::match_licence('opencast', '');
+        }
+        return self::match_licence('opencast', $licence->value);
+    }
+
+    /**
      * Write back the fields that are allowed to overwrite in the source.
      *
      * @param string $identifier Identifier of OER element.

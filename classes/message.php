@@ -38,104 +38,48 @@ class message {
      * This requires manual action to clean up or restore the videos in Opencast.
      *
      * @param array $tofix array of videos with wrong ACL settings
+     * @param array $wronglicence array of videos with wrong licence
      * @param array $missing array of missing videos
      * @param array $errors array of videos with other errors
-     * @param array $failed array of videos that could not be released
      * @return void
      * @throws \dml_exception
      */
-    public static function send_missingvideos(array $tofix, array $missing, array $errors, array $failed): void {
-        if (empty($tofix) && empty($missing) && empty($errors) && empty($failed)) {
-            return;
+    public static function send_missingvideos(array $tofix, array $wronglicence, array $missing, array $errors): void {
+        if (empty($tofix) && empty($wronglicence) && empty($missing) && empty($errors) && empty($failed)) {
+            return; // Nothing to do.
         }
+
+        $combined = count($tofix) + count($wronglicence) + count($missing) + count($errors);
+        logger::add(
+            0,
+            logger::LOGERROR,
+            'Validate Task: ' . $combined .
+            ' errors in videos found. Message sent to the main administrator, authorised users and the set email address.',
+            'oermod_opencast'
+        );
+
         $message = new \core\message\message();
         $message->component = 'oermod_opencast';
         $message->name = 'missingvideos';
         $message->userfrom = \core_user::get_noreply_user();
         $message->subject = get_string('message:missingvideos', 'oermod_opencast');
         $message->fullmessageformat = FORMAT_HTML;
-        $fullmessage = '';
-        if (!empty($tofix)) {
-            $roles = get_config('oermod_opencast', 'rolestoremovewrite');
-            $roles = explode("\r\n", $roles);
-            $roles = implode(', ', $roles);
-            $fullmessage .= '<h3>' .
-                get_string('message:tofixvideos_body', 'oermod_opencast') .
-                '</h3><p>' .
-                get_string('message:tofixvideos_body_extension', 'oermod_opencast', ['roles' => $roles]) .
-                '</p>';
-            $filelisthtml = '<p>';
-            logger::add(
-                0,
-                logger::LOGERROR,
-                count($tofix) . ' videos have wrong ACL settings. Notification has been sent to admins.',
-                'oermod_opencast'
-            );
-            foreach ($tofix as $video) {
-                $filelisthtml .= self::get_video_for_message(
-                    $video['snapshot']->courseid,
-                    $video['snapshot']->title,
-                    $video['snapshot']->identifier
-                );
-            }
-            $fullmessage .= $filelisthtml . '</p>';
-        }
-        if (!empty($failed)) {
-            $fullmessage .= '<h3>' . get_string('message:failedvideos_body', 'oermod_opencast') . '</h3>';
-            $filelisthtml = '<p>';
-            logger::add(
-                0,
-                logger::LOGERROR,
-                count($failed) . ' videos failed to be set to release. Notification has been sent to admins.',
-                'oermod_opencast'
-            );
-            foreach ($failed as $video) {
-                $filelisthtml .= self::get_video_for_message(
-                    $video['snapshot']->courseid,
-                    $video['snapshot']->title,
-                    $video['snapshot']->identifier
-                );
-            }
-            $fullmessage .= $filelisthtml . '</p>';
-        }
-        if (!empty($missing)) {
-            $fullmessage .= '<h3>' . get_string('message:missingvideos_body', 'oermod_opencast') . '</h3>';
-            $filelisthtml = '<p>';
-            logger::add(
-                0,
-                logger::LOGERROR,
-                count($missing) . ' missing videos. Notification has been sent to admins.',
-                'oermod_opencast'
-            );
-            foreach ($missing as $video) {
-                $filelisthtml .= self::get_video_for_message(
-                    $video['snapshot']->courseid,
-                    $video['snapshot']->title,
-                    $video['snapshot']->identifier
-                );
-            }
-            $fullmessage .= $filelisthtml . '</p>';
-        }
-        if (!empty($errors)) {
-            $fullmessage .= '<h3>' . get_string('message:errors', 'oermod_opencast') . '</h3>';
-            $filelisthtml = '<p>';
-            logger::add(
-                0,
-                logger::LOGERROR,
-                count($errors) . ' errors with videos. Notification has been sent to admins.',
-                'oermod_opencast'
-            );
-            foreach ($errors as $error) {
-                $filelisthtml .= self::get_video_for_message(
-                    $error['snapshot']->courseid,
-                    $error['snapshot']->title,
-                    $error['snapshot']->identifier
-                );
-                $filelisthtml .= '&nbsp;&nbsp;&nbsp;Error: ' . $error['response']['code'] . ' | ' . $error['response']['reason'] .
-                    '<br>';
-            }
-            $fullmessage .= $filelisthtml . '</p>';
-        }
+
+        $roles = get_config('oermod_opencast', 'rolestoremovewrite');
+        $roles = explode("\r\n", $roles);
+        $roles = implode(', ', $roles);
+        $roles = str_replace('{{', '[', $roles);
+        $roles = str_replace('}}', ']', $roles);
+        $data = [
+            'tofix' => !empty($tofix) ? self::get_video_list_for_message($tofix) : [],
+            'roles' => $roles,
+            'wronglicence' => !empty($wronglicence) ? self::get_video_list_for_message($wronglicence) : [],
+            'missing' => !empty($missing) ? self::get_video_list_for_message($missing) : [],
+            'errors' => !empty($errors) ? self::get_video_list_for_message($errors) : [],
+        ];
+        global $OUTPUT;
+        $fullmessage = $OUTPUT->render_from_template('oermod_opencast/message', $data);
+
         $message->fullmessage = $fullmessage;
         $message->fullmessagehtml = $fullmessage;
         $message->smallmessage = get_string('message:missingvideos_small', 'oermod_opencast');
@@ -182,14 +126,22 @@ class message {
     }
 
     /**
-     * Concatenate information to a single line string for message.
+     * Format the video array for the Mustache template.
      *
-     * @param int $courseid
-     * @param string $title
-     * @param string $identifier
-     * @return string
+     * @param array $videos
+     * @return array
      */
-    private static function get_video_for_message(int $courseid, string $title, string $identifier): string {
-        return "* CourseID: $courseid | $title | $identifier<br>";
+    private static function get_video_list_for_message(array $videos): array {
+        $data = [];
+        foreach ($videos as $video) {
+            $data[] = [
+                'courseid' => $video['snapshot']->courseid,
+                'title' => $video['snapshot']->title,
+                'identifier' => $video['snapshot']->identifier,
+                'code' => isset($video['response']) ? $video['response']['code'] : '',
+                'reason' => isset($video['response']) ? $video['response']['reason'] : '',
+            ];
+        }
+        return $data;
     }
 }
