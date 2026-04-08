@@ -121,7 +121,8 @@ class check_released_videos_task extends scheduled_task {
                 // When a video is released, all courses where the video is linked should lose writing capability.
                 // So we check for every role from the oermod_opencast | rolestoremovewrite setting.
                 foreach ($roles as $role) {
-                    if (str_contains($permission->role, $role) &&
+                    if (
+                        str_contains($permission->role, $role) &&
                         $permission->action == 'write' &&
                         $permission->allow
                     ) {
